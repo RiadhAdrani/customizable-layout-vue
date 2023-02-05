@@ -1,15 +1,18 @@
 <script lang="ts" setup>
 import { computed } from "vue";
-import { Layout, Tab, UIType, LayoutActions, Direction } from "./types";
-import { getType, getTab } from "./useLayout";
+import { Layout, Tab, UIType, LayoutActions, Direction, Side } from "./types";
+import { getType, getTab, createTab } from "./useLayout";
 import VTabButton from "./VTabButton.vue";
+import VTabContent from "./VTabContent.vue";
 
 const { template, actions } = defineProps<{
   template: Layout<Tab | Layout>;
   actions: LayoutActions;
 }>();
 
-const forLayouts = getType(template.children) === UIType.Layout;
+const forLayouts = computed(() => getType(template.children) === UIType.Layout);
+
+const isEmpty = computed(() => template.children.length === 0);
 
 const classList = computed(() => {
   const list = [];
@@ -31,12 +34,22 @@ const toggle = (id: string) => {
 const close = (id: string) => {
   actions.useCloseTab(id, template as Layout);
 };
+
+const dropped = ({ side }: { ev: DragEvent; side: Side }) => {
+  // TODO : create tab with events.onDrop
+  const tab = createTab({ title: "Hello" });
+
+  actions.useOnDrop(tab, template as Layout, side);
+};
 </script>
 
 <template>
   <div class="clv__layout-wrapper">
-    <div v-if="!forLayouts" class="clv__tabs-container">
+    <!-- TODO allow dropping of tabs here  -->
+    <div v-if="isEmpty">Try dropping something here...</div>
+    <div v-else-if="!forLayouts" class="clv__tabs-container">
       <div class="clv__tabs-container-bar">
+        <!-- TODO allow dropping of tabs here  -->
         <VTabButton
           v-for="item of (template.children as Array<Tab>)"
           :active-id="template.active!"
@@ -46,13 +59,11 @@ const close = (id: string) => {
           @close-tab="close(item.id)"
         />
       </div>
-      <div class="clv__tabs-content">
-        <slot name="tab" v-bind="getTab(template.active!,(template.children as Array<Tab>))"
-          >Tab Goes Here</slot
-        >
-      </div>
+      <VTabContent @on-drop="dropped">
+        <slot name="tab" v-bind="getTab(template.active!,(template.children as Array<Tab>))"></slot>
+      </VTabContent>
     </div>
-    <div v-if="forLayouts" class="clv__layouts-container" :class="classList">
+    <div v-else class="clv__layouts-container" :class="classList">
       <VLayout
         v-for="item in (template.children as Array<Layout>)"
         :key="item.id"
@@ -60,7 +71,7 @@ const close = (id: string) => {
         :actions="actions"
       >
         <template #tab="data">
-          <slot name="tab" v-bind="(data as Tab)">Tab Goes Here</slot>
+          <slot name="tab" v-bind="(data as Tab)"></slot>
         </template>
       </VLayout>
     </div>
@@ -71,11 +82,13 @@ const close = (id: string) => {
 .clv__layout-wrapper {
   display: flex;
   flex-direction: column;
+  flex: 1;
 }
 
 .clv__tabs-container {
   display: flex;
   flex-direction: column;
+  flex: 1;
 }
 
 .clv__tabs-container-bar {
@@ -108,12 +121,9 @@ const close = (id: string) => {
   background-color: #1a1a1a;
 }
 
-.clv__tabs-content {
-  padding: 10px;
-}
-
 .clv__layouts-container {
   display: flex;
+  flex: 1;
 }
 
 .clv__layout-container-row {

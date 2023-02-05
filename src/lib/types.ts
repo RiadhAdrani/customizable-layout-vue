@@ -8,6 +8,7 @@ export enum Side {
   Bottom = "bottom",
   Left = "left",
   Right = "right",
+  Center = "center",
 }
 
 export enum UIType {
@@ -15,17 +16,11 @@ export enum UIType {
   Layout = "__layout__",
 }
 
-export interface CommonHooks {
-  onMounted?: (el: BaseUI) => void;
-  onBeforeUnmounted?: (el: BaseUI) => void;
-  onUnmounted?: (el: BaseUI) => void;
-}
-
-export interface BaseUI extends CommonHooks {
+export interface BaseUI {
   id: string;
 }
 
-export interface TabTemplate<T = Record<string, string>> {
+export interface TabTemplate<T = Record<string, unknown>> {
   type: UIType.Tab;
   title: string;
   id?: string;
@@ -49,7 +44,7 @@ export interface Tab extends TabTemplate {
 
 export interface Layout<T = Tab> extends BaseUI {
   type: UIType.Layout;
-  parent?: Layout;
+  parent?: Layout<Layout>;
   children: Array<T>;
   direction: Direction;
   active?: string;
@@ -63,6 +58,8 @@ export type onDrop = <T = unknown>(data: T) => Tab;
 export interface LayoutActions {
   useToggleTab: (id: string, layout: Layout) => void;
   useCloseTab: (id: string, layout: Layout) => void;
+  useAddTab: (tab: TabTemplate, layout: Layout, position?: number) => void;
+  useOnDrop: (tab: TabTemplate, layout: Layout, side: Side) => void;
 }
 
 export interface LayoutEvents {

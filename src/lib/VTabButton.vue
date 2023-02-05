@@ -15,7 +15,13 @@ const close = () => {
 </script>
 
 <template>
-  <button class="clv__tab-btn" draggable="true" @click="toggle" :data-active="activeId === item.id">
+  <button
+    class="clv__tab-btn"
+    draggable="true"
+    @dragstart.stop
+    @click="toggle"
+    :data-active="activeId === item.id"
+  >
     <span>{{ item.title }}</span>
     <span class="clv__tab-btn-close" @click.prevent="close">❌</span>
   </button>
