@@ -1,7 +1,16 @@
 <script lang="ts" setup>
 import { computed } from "vue";
-import { Layout, Tab, UIType, LayoutActions, Direction, Side } from "./types";
-import { getType, getTab, createTab } from "./useLayout";
+import {
+  Layout,
+  Tab,
+  UIType,
+  LayoutActions,
+  Direction,
+  Side,
+  DraggedTab,
+  TabTemplate,
+} from "./types";
+import { getType, getTab, createTab, findUiByPath, getRoot } from "./useLayout";
 import VTabButton from "./VTabButton.vue";
 import VTabContent from "./VTabContent.vue";
 
@@ -35,11 +44,40 @@ const close = (id: string) => {
   actions.useCloseTab(id, template as Layout);
 };
 
-const dropped = ({ side }: { ev: DragEvent; side: Side }) => {
+const dropped = ({ side, ev }: { ev: DragEvent; side: Side }) => {
   // TODO : create tab with events.onDrop
-  const tab = createTab({ title: "Hello" });
+  let data: Record<string, unknown> = {};
+  let tab: TabTemplate | undefined = undefined;
 
-  actions.useOnDrop(tab, template as Layout, side);
+  try {
+    data = JSON.parse(ev.dataTransfer?.getData("text") ?? "{}");
+  } catch (error) {}
+
+  if (
+    data.type === UIType.Tab &&
+    data.signature === "__dragged__tab__" &&
+    typeof data.id === "string" &&
+    Array.isArray(data.parents)
+  ) {
+    const $data = data as unknown as DraggedTab;
+    // TODO : we should remove the tab from its original position and create it here
+
+    const $tab = findUiByPath(
+      $data.id,
+      $data.parents,
+      getRoot(template) as unknown as Layout<Layout>
+    ) as Tab;
+
+    actions.useCloseTab($tab.id, $tab.parent);
+
+    tab = createTab($data);
+  } else {
+    // TODO : allow user to create tab with drag event
+  }
+
+  if (tab) {
+    actions.useOnDrop(tab, template as Layout, side);
+  }
 };
 </script>
 

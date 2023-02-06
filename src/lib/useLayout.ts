@@ -47,9 +47,16 @@ export const transformLayoutTemplate = (
   if ((template.children as Array<TabTemplate>).every((child) => child.type === UIType.Tab)) {
     const children = template.children as Array<TabTemplate>;
 
-    // TODO : children should not have the same id !
-
     layout.children = children.map((child) => transformTabTemplate(child, layout));
+
+    const ids = new Set(layout.children.map((item) => item.id));
+
+    // TODO throw error with the duplicate id.
+
+    if (ids.size !== layout.children.length) {
+      throw `Duplicate Id: Duplicate id found.`;
+    }
+
     layout.active = layout.children[0].id;
   } else if (
     (template.children as Array<LayoutTemplate>).every((child) => child.type === UIType.Layout)
@@ -126,6 +133,45 @@ export const useToggleTab = (id: string, layout: Layout): void => {
   if (layout.active !== id) {
     layout.active = id;
   }
+};
+
+export const getParentsHierarchy = (ui: Layout<any> | Tab): Array<string> => {
+  const list = [];
+
+  if (ui.parent) {
+    list.push(ui.parent.id, ...getParentsHierarchy(ui.parent as Layout));
+  }
+
+  return list;
+};
+
+export const findUiByPath = (
+  id: string,
+  path: Array<string>,
+  root: Layout<Layout>
+): Tab | Layout => {
+  let $path = path;
+  let parent: Layout<Layout> = root;
+
+  while ($path.length > 0) {
+    const $parent = parent.children.find((child) => child.id === $path[0]);
+
+    if (!$parent) {
+      throw `Incorrect UI path (findUiByPath): "${path.join("/")}"`;
+    }
+
+    parent = $parent as unknown as Layout<Layout>;
+
+    $path = $path.slice(1);
+  }
+
+  const $item = parent.children.find((child) => child.id === id);
+
+  if (!$item) {
+    throw `Not Found (findUiByPath): Unable to find UI element with id "${id}".`;
+  }
+
+  return $item;
 };
 
 export const useCloseTab = (id: string, layout: Layout): void => {

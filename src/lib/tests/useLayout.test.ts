@@ -12,6 +12,8 @@ import {
   useToggleTab,
   useCloseTab,
   useAddTab,
+  getParentsHierarchy,
+  findUiByPath,
 } from "../useLayout";
 
 describe("useLayout", () => {
@@ -70,6 +72,14 @@ describe("useLayout", () => {
       expect(() => transformLayoutTemplate(template)).toThrow(
         "Unexpected State (transformLayoutTemplate): Layout children should have at least 1 tab, or 2 layouts."
       );
+    });
+
+    it("should throw when there is a duplicate id", () => {
+      const template = createLayout({
+        children: [createTab({ title: "1", id: "1" }), createTab({ title: "1", id: "1" })],
+      });
+
+      expect(() => transformLayoutTemplate(template)).toThrow(`Duplicate Id: Duplicate id found.`);
     });
 
     it("should create a Layout of Tabs", () => {
@@ -337,6 +347,123 @@ describe("useLayout", () => {
     it("should return root parent of a nested child", () => {
       const child = layout.children[0].children[2] as unknown as Layout;
       expect(getRoot(child) === (layout as unknown as Layout)).toBe(true);
+    });
+  });
+
+  describe("getParentsHierarchy", () => {
+    const layout = transformLayoutTemplate(
+      createLayout({
+        id: "1",
+        children: [
+          createLayout({
+            id: "1-1",
+            children: [
+              createTab({ id: "1", title: "" }),
+              createTab({ id: "2", title: "" }),
+              createTab({ id: "3", title: "" }),
+            ],
+          }),
+          createLayout({
+            id: "1-2",
+            children: [
+              createLayout({
+                id: "1-2-1",
+                children: [
+                  createTab({ id: "1", title: "" }),
+                  createTab({ id: "2", title: "" }),
+                  createTab({ id: "3", title: "" }),
+                ],
+              }),
+              createLayout({
+                id: "1-2-2",
+                children: [
+                  createTab({ id: "3", title: "" }),
+                  createTab({ id: "4", title: "" }),
+                  createTab({ id: "5", title: "" }),
+                ],
+              }),
+            ],
+          }),
+        ],
+      })
+    ) as unknown as Layout<Layout>;
+
+    it("should return an empty array in the root", () => {
+      expect(getParentsHierarchy(layout)).toStrictEqual([]);
+    });
+
+    it("should return an array of one level", () => {
+      expect(getParentsHierarchy(layout.children[0])).toStrictEqual(["1"]);
+    });
+
+    it("should return an array of second level", () => {
+      expect(getParentsHierarchy(layout.children[0].children[0])).toStrictEqual(["1-1", "1"]);
+    });
+
+    it("should return an array of third level", () => {
+      expect(
+        getParentsHierarchy((layout.children[1].children[1] as unknown as Layout).children[1])
+      ).toStrictEqual(["1-2-2", "1-2", "1"]);
+    });
+  });
+
+  describe("findUiByHierarchy", () => {
+    const layout = transformLayoutTemplate(
+      createLayout({
+        id: "1",
+        children: [
+          createLayout({
+            id: "1-1",
+            children: [
+              createTab({ id: "1", title: "" }),
+              createTab({ id: "2", title: "" }),
+              createTab({ id: "3", title: "" }),
+            ],
+          }),
+          createLayout({
+            id: "1-2",
+            children: [
+              createLayout({
+                id: "1-2-1",
+                children: [
+                  createTab({ id: "1", title: "" }),
+                  createTab({ id: "2", title: "" }),
+                  createTab({ id: "3", title: "" }),
+                ],
+              }),
+              createLayout({
+                id: "1-2-2",
+                children: [
+                  createTab({ id: "3", title: "" }),
+                  createTab({ id: "4", title: "me" }),
+                  createTab({ id: "5", title: "" }),
+                ],
+              }),
+            ],
+          }),
+        ],
+      })
+    ) as unknown as Layout<Layout>;
+
+    it("should throw when hierarchy is wrong", () => {
+      expect(() => findUiByPath("3", ["1-2", "1-2-3"], layout)).toThrow(
+        `Incorrect UI path (findUiByPath): "1-2/1-2-3"`
+      );
+    });
+
+    it("should throw when id is not found", () => {
+      expect(() => findUiByPath("5", ["1-1"], layout)).toThrow(
+        `Not Found (findUiByPath): Unable to find UI element with id "5".`
+      );
+    });
+
+    it("should retrieve element", () => {
+      const el = findUiByPath("4", ["1-2", "1-2-2"], layout) as Tab;
+
+      expect(el).toBeDefined();
+      expect(el.id).toBe("4");
+      expect(el.title).toBe("me");
+      expect(el.type).toBe(UIType.Tab);
     });
   });
 

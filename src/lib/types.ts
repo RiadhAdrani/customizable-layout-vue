@@ -65,3 +65,9 @@ export interface LayoutActions {
 export interface LayoutEvents {
   onTabButtonClicked: (id: string, parent: string) => void;
 }
+
+export interface DraggedTab extends TabTemplate<Record<string, unknown>> {
+  parents: Array<string>;
+  id: string;
+  signature: "__dragged__tab__";
+}

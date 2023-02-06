@@ -1,5 +1,6 @@
 <script lang="ts" setup>
-import { Tab } from "./types";
+import { Tab, DraggedTab, UIType } from "./types";
+import { getParentsHierarchy } from "./useLayout";
 
 const { item } = defineProps<{ item: Tab; activeId: string }>();
 
@@ -12,13 +13,28 @@ const toggle = () => {
 const close = () => {
   emit("close-tab", item.id);
 };
+
+const onDragStart = (e: DragEvent) => {
+  const parents = getParentsHierarchy(item).reverse().slice(1);
+
+  const data: DraggedTab = {
+    id: item.id,
+    type: UIType.Tab,
+    title: item.title,
+    data: item.data,
+    signature: "__dragged__tab__",
+    parents,
+  };
+
+  e.dataTransfer?.setData("text/plain", JSON.stringify(data));
+};
 </script>
 
 <template>
   <button
     class="clv__tab-btn"
     draggable="true"
-    @dragstart.stop
+    @dragstart.stop="onDragStart"
     @click="toggle"
     :data-active="activeId === item.id"
   >
