@@ -25,7 +25,7 @@ export const createLayout = (params: CreateLayoutTemplate): LayoutTemplate => ({
 });
 
 export const transformTabTemplate = (params: TabTemplate, parent: Layout): Tab => {
-  return { ...params, parent, id: params.id ?? useId() };
+  return { ...params, parent, id: useId() };
 };
 
 export const transformLayoutTemplate = (
@@ -36,7 +36,7 @@ export const transformLayoutTemplate = (
     ...template,
     children: [],
     parent,
-    id: template.id ?? useId(),
+    id: useId(),
     direction: template.direction ?? Direction.Row,
   };
 
@@ -194,16 +194,11 @@ export const useCloseTab = (id: string, layout: Layout): void => {
       ) as unknown as Array<Layout>;
 
       if (newParentChildren.length === 1) {
-        const tabs = newParentChildren[0].children;
-
-        layout.parent.children = tabs.map((tab) =>
-          transformTabTemplate(
-            createTab({ title: tab.title, data: tab.data, id: tab.id }),
-            layout.parent as unknown as Layout
-          )
-        ) as unknown as Array<Layout>;
-
+        layout.parent.children = newParentChildren[0].children as unknown as Array<Layout>;
+        layout.parent.children.forEach((item) => (item.parent = layout.parent));
         layout.parent.direction = Direction.Row;
+
+        // TODO : get correct active one
         layout.parent.active = newParentChildren[0].active;
       } else {
         layout.parent.children = newParentChildren as unknown as Array<Layout>;
@@ -247,36 +242,90 @@ export const useAddTab = (tab: TabTemplate, layout: Layout, position = Infinity)
     throw `Unexpected State: cannot add Tab to Layouts.`;
   }
 
-  if (tab.id && findTab(tab.id, layout)) {
-    return;
-  } else {
-    const $tab = transformTabTemplate(tab, layout);
+  const $tab = transformTabTemplate(tab, layout);
 
-    const pos = clamp(0, position, layout.children.length);
+  const pos = clamp(0, position, layout.children.length);
 
-    layout.children = [...layout.children.slice(0, pos), $tab, ...layout.children.slice(pos)];
-  }
+  layout.children = [...layout.children.slice(0, pos), $tab, ...layout.children.slice(pos)];
 };
 
 export const useOnDrop = (tab: TabTemplate, layout: Layout, side: Side) => {
+  const addAtSide = (direction: Direction, before: boolean) => {
+    if (layout.parent) {
+      if (layout.parent.direction === direction) {
+        const newLayout = transformLayoutTemplate(
+          createLayout({ children: [tab] }),
+          layout.parent as unknown as Layout<Layout>
+        );
+
+        const index = layout.parent.children.indexOf(layout) + (before ? 0 : 1);
+
+        layout.parent.children = [
+          ...layout.parent.children.slice(0, index),
+          newLayout,
+          ...layout.parent.children.slice(index),
+        ];
+      } else {
+        const oldLayout = transformLayoutTemplate(
+          createLayout({
+            children: layout.children.map((child) =>
+              createTab({ title: child.title, data: child.data })
+            ),
+          }),
+          layout as unknown as Layout<Layout>
+        );
+
+        const newLayout = transformLayoutTemplate(
+          createLayout({ children: [tab] }),
+          layout as unknown as Layout<Layout>
+        );
+
+        const $children = [newLayout, oldLayout] as unknown as Array<Tab>;
+
+        layout.direction = direction;
+        layout.children = before ? $children : $children.reverse();
+      }
+    } else {
+      const oldLayout = transformLayoutTemplate(
+        createLayout({
+          children: layout.children.map((child) =>
+            createTab({ title: child.title, data: child.data })
+          ),
+        }),
+        layout as unknown as Layout<Layout>
+      );
+
+      const newLayout = transformLayoutTemplate(
+        createLayout({ children: [tab] }),
+        layout as unknown as Layout<Layout>
+      );
+
+      const $children = [newLayout, oldLayout] as unknown as Array<Tab>;
+
+      layout.direction = direction;
+      layout.children = before ? $children : $children.reverse();
+    }
+  };
+
   switch (side) {
     case Side.Center: {
       useAddTab(tab, layout);
       break;
     }
     case Side.Top: {
-      const top = createLayout({ children: [tab] });
-      const bottom = createLayout({
-        children: layout.children,
-        direction: layout.direction,
-      });
-
-      layout.direction = Direction.Column;
-      layout.children = [top, bottom].map((item) => {
-        return transformLayoutTemplate(item, layout as unknown as Layout<Layout>);
-      }) as unknown as Array<Tab>;
-      layout.active = undefined;
-
+      addAtSide(Direction.Column, true);
+      break;
+    }
+    case Side.Bottom: {
+      addAtSide(Direction.Column, false);
+      break;
+    }
+    case Side.Left: {
+      addAtSide(Direction.Row, true);
+      break;
+    }
+    case Side.Right: {
+      addAtSide(Direction.Row, false);
       break;
     }
   }

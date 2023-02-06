@@ -23,11 +23,10 @@ describe("useLayout", () => {
     });
 
     it("should create a tab template with all options", () => {
-      expect(createTab({ title: "Test", data: { id: "123" }, id: "1" })).toStrictEqual({
+      expect(createTab({ title: "Test", data: { id: "123" } })).toStrictEqual({
         title: "Test",
         type: UIType.Tab,
         data: { id: "123" },
-        id: "1",
       });
     });
   });
@@ -38,10 +37,9 @@ describe("useLayout", () => {
     });
 
     it("should create a layout template with minimal options", () => {
-      expect(createLayout({ children: [], direction: Direction.Column, id: "1" })).toStrictEqual({
+      expect(createLayout({ children: [], direction: Direction.Column })).toStrictEqual({
         children: [],
         direction: Direction.Column,
-        id: "1",
         type: UIType.Layout,
       });
     });
@@ -74,17 +72,9 @@ describe("useLayout", () => {
       );
     });
 
-    it("should throw when there is a duplicate id", () => {
-      const template = createLayout({
-        children: [createTab({ title: "1", id: "1" }), createTab({ title: "1", id: "1" })],
-      });
-
-      expect(() => transformLayoutTemplate(template)).toThrow(`Duplicate Id: Duplicate id found.`);
-    });
-
     it("should create a Layout of Tabs", () => {
       const template = createLayout({
-        children: [createTab({ title: "Test", id: "1" }), createTab({ title: "Test 2", id: "2" })],
+        children: [createTab({ title: "Test" }), createTab({ title: "Test 2" })],
       });
 
       const layout = transformLayoutTemplate(template);
@@ -92,7 +82,7 @@ describe("useLayout", () => {
       expect(layout.id).toBeDefined();
       expect(layout.parent).toBeUndefined();
       expect(layout.children.length).toBe(2);
-      expect(layout.active).toBe("1");
+      expect(layout.active).toBe(layout.children[0].id);
       expect(layout.children.every((child) => child.type === UIType.Tab)).toBe(true);
     });
 
@@ -222,18 +212,19 @@ describe("useLayout", () => {
     const layout = transformLayoutTemplate(
       createLayout({
         children: [
-          createTab({ title: "Hello 1", id: "1", data: { n: 1 } }),
-          createTab({ title: "Hello 2", id: "2", data: { n: 2 } }),
-          createTab({ title: "Hello 3", id: "3", data: { n: 3 } }),
+          createTab({ title: "Hello 1", data: { n: 1 } }),
+          createTab({ title: "Hello 2", data: { n: 2 } }),
+          createTab({ title: "Hello 3", data: { n: 3 } }),
         ],
       })
     );
 
     it("should find tab with given id", () => {
-      const tab = getTab("2", layout.children) as Tab;
+      const id = layout.children[1].id;
+
+      const tab = getTab(id, layout.children) as Tab;
 
       expect(tab.data).toStrictEqual({ n: 2 });
-      expect(tab.id).toStrictEqual("2");
       expect(tab.title).toStrictEqual("Hello 2");
     });
 
@@ -250,34 +241,34 @@ describe("useLayout", () => {
         children: [
           createLayout({
             children: [
-              createTab({ title: "Hello 1", id: "1", data: { n: 1 } }),
-              createTab({ title: "Hello 2", id: "2", data: { n: 2 } }),
-              createTab({ title: "Hello 3", id: "3", data: { n: 3 } }),
+              createTab({ title: "Hello 1", data: { n: 1 } }),
+              createTab({ title: "Hello 2", data: { n: 2 } }),
+              createTab({ title: "Hello 3", data: { n: 3 } }),
             ],
           }),
           createLayout({
             children: [
               createLayout({
                 children: [
-                  createTab({ title: "Hello 7", id: "7", data: { n: 7 } }),
-                  createTab({ title: "Hello 8", id: "8", data: { n: 8 } }),
-                  createTab({ title: "Hello 9", id: "9", data: { n: 9 } }),
+                  createTab({ title: "Hello 7", data: { n: 7 } }),
+                  createTab({ title: "Hello 8", data: { n: 8 } }),
+                  createTab({ title: "Hello 9", data: { n: 9 } }),
                 ],
               }),
               createLayout({
                 children: [
-                  createTab({ title: "Hello 10", id: "10", data: { n: 10 } }),
-                  createTab({ title: "Hello 11", id: "11", data: { n: 11 } }),
-                  createTab({ title: "Hello 12", id: "12", data: { n: 12 } }),
+                  createTab({ title: "Hello 10", data: { n: 10 } }),
+                  createTab({ title: "Hello 11", data: { n: 11 } }),
+                  createTab({ title: "Hello 12", data: { n: 12 } }),
                 ],
               }),
             ],
           }),
           createLayout({
             children: [
-              createTab({ title: "Hello 4", id: "4", data: { n: 4 } }),
-              createTab({ title: "Hello 5", id: "5", data: { n: 5 } }),
-              createTab({ title: "Hello 6", id: "6", data: { n: 6 } }),
+              createTab({ title: "Hello 4", data: { n: 4 } }),
+              createTab({ title: "Hello 5", data: { n: 5 } }),
+              createTab({ title: "Hello 6", data: { n: 6 } }),
             ],
           }),
         ],
@@ -285,7 +276,10 @@ describe("useLayout", () => {
     );
 
     it("should find tab in nested layouts", () => {
-      const tab = findTab("8", layout) as Tab;
+      const id = (layout as unknown as Layout<Layout<Layout>>).children[1].children[0].children[1]
+        .id;
+
+      const tab = findTab(id, layout) as Tab;
 
       expect(tab).toBeDefined();
       expect(tab.data).toStrictEqual({ n: 8 });
@@ -305,34 +299,34 @@ describe("useLayout", () => {
         children: [
           createLayout({
             children: [
-              createTab({ title: "Hello 1", id: "1", data: { n: 1 } }),
-              createTab({ title: "Hello 2", id: "2", data: { n: 2 } }),
-              createTab({ title: "Hello 3", id: "3", data: { n: 3 } }),
+              createTab({ title: "Hello 1", data: { n: 1 } }),
+              createTab({ title: "Hello 2", data: { n: 2 } }),
+              createTab({ title: "Hello 3", data: { n: 3 } }),
             ],
           }),
           createLayout({
             children: [
               createLayout({
                 children: [
-                  createTab({ title: "Hello 7", id: "7", data: { n: 7 } }),
-                  createTab({ title: "Hello 8", id: "8", data: { n: 8 } }),
-                  createTab({ title: "Hello 9", id: "9", data: { n: 9 } }),
+                  createTab({ title: "Hello 7", data: { n: 7 } }),
+                  createTab({ title: "Hello 8", data: { n: 8 } }),
+                  createTab({ title: "Hello 9", data: { n: 9 } }),
                 ],
               }),
               createLayout({
                 children: [
-                  createTab({ title: "Hello 10", id: "10", data: { n: 10 } }),
-                  createTab({ title: "Hello 11", id: "11", data: { n: 11 } }),
-                  createTab({ title: "Hello 12", id: "12", data: { n: 12 } }),
+                  createTab({ title: "Hello 10", data: { n: 10 } }),
+                  createTab({ title: "Hello 11", data: { n: 11 } }),
+                  createTab({ title: "Hello 12", data: { n: 12 } }),
                 ],
               }),
             ],
           }),
           createLayout({
             children: [
-              createTab({ title: "Hello 4", id: "4", data: { n: 4 } }),
-              createTab({ title: "Hello 5", id: "5", data: { n: 5 } }),
-              createTab({ title: "Hello 6", id: "6", data: { n: 6 } }),
+              createTab({ title: "Hello 4", data: { n: 4 } }),
+              createTab({ title: "Hello 5", data: { n: 5 } }),
+              createTab({ title: "Hello 6", data: { n: 6 } }),
             ],
           }),
         ],
@@ -353,33 +347,28 @@ describe("useLayout", () => {
   describe("getParentsHierarchy", () => {
     const layout = transformLayoutTemplate(
       createLayout({
-        id: "1",
         children: [
           createLayout({
-            id: "1-1",
             children: [
-              createTab({ id: "1", title: "" }),
-              createTab({ id: "2", title: "" }),
-              createTab({ id: "3", title: "" }),
+              createTab({ title: "" }),
+              createTab({ title: "" }),
+              createTab({ title: "" }),
             ],
           }),
           createLayout({
-            id: "1-2",
             children: [
               createLayout({
-                id: "1-2-1",
                 children: [
-                  createTab({ id: "1", title: "" }),
-                  createTab({ id: "2", title: "" }),
-                  createTab({ id: "3", title: "" }),
+                  createTab({ title: "" }),
+                  createTab({ title: "" }),
+                  createTab({ title: "" }),
                 ],
               }),
               createLayout({
-                id: "1-2-2",
                 children: [
-                  createTab({ id: "3", title: "" }),
-                  createTab({ id: "4", title: "" }),
-                  createTab({ id: "5", title: "" }),
+                  createTab({ title: "" }),
+                  createTab({ title: "" }),
+                  createTab({ title: "" }),
                 ],
               }),
             ],
@@ -393,50 +382,54 @@ describe("useLayout", () => {
     });
 
     it("should return an array of one level", () => {
-      expect(getParentsHierarchy(layout.children[0])).toStrictEqual(["1"]);
+      const id = layout.id;
+
+      expect(getParentsHierarchy(layout.children[0])).toStrictEqual([id]);
     });
 
     it("should return an array of second level", () => {
-      expect(getParentsHierarchy(layout.children[0].children[0])).toStrictEqual(["1-1", "1"]);
+      const id = layout.id;
+      const parentId = layout.children[0].id;
+
+      expect(getParentsHierarchy(layout.children[0].children[0])).toStrictEqual([parentId, id]);
     });
 
     it("should return an array of third level", () => {
+      const rootId = layout.id;
+      const grandParentId = layout.children[1].id;
+      const parentId = layout.children[1].children[1].id;
+
       expect(
         getParentsHierarchy((layout.children[1].children[1] as unknown as Layout).children[1])
-      ).toStrictEqual(["1-2-2", "1-2", "1"]);
+      ).toStrictEqual([parentId, grandParentId, rootId]);
     });
   });
 
   describe("findUiByHierarchy", () => {
     const layout = transformLayoutTemplate(
       createLayout({
-        id: "1",
         children: [
           createLayout({
-            id: "1-1",
             children: [
-              createTab({ id: "1", title: "" }),
-              createTab({ id: "2", title: "" }),
-              createTab({ id: "3", title: "" }),
+              createTab({ title: "" }),
+              createTab({ title: "" }),
+              createTab({ title: "" }),
             ],
           }),
           createLayout({
-            id: "1-2",
             children: [
               createLayout({
-                id: "1-2-1",
                 children: [
-                  createTab({ id: "1", title: "" }),
-                  createTab({ id: "2", title: "" }),
-                  createTab({ id: "3", title: "" }),
+                  createTab({ title: "" }),
+                  createTab({ title: "" }),
+                  createTab({ title: "" }),
                 ],
               }),
               createLayout({
-                id: "1-2-2",
                 children: [
-                  createTab({ id: "3", title: "" }),
-                  createTab({ id: "4", title: "me" }),
-                  createTab({ id: "5", title: "" }),
+                  createTab({ title: "" }),
+                  createTab({ title: "me" }),
+                  createTab({ title: "" }),
                 ],
               }),
             ],
@@ -451,17 +444,14 @@ describe("useLayout", () => {
       );
     });
 
-    it("should throw when id is not found", () => {
-      expect(() => findUiByPath("5", ["1-1"], layout)).toThrow(
-        `Not Found (findUiByPath): Unable to find UI element with id "5".`
-      );
-    });
-
     it("should retrieve element", () => {
-      const el = findUiByPath("4", ["1-2", "1-2-2"], layout) as Tab;
+      const grandParentId = layout.children[1].id;
+      const parentId = layout.children[1].children[1].id;
+      const tabId = (layout.children[1].children[1] as unknown as Layout).children[1].id;
+
+      const el = findUiByPath(tabId, [grandParentId, parentId], layout) as Tab;
 
       expect(el).toBeDefined();
-      expect(el.id).toBe("4");
       expect(el.title).toBe("me");
       expect(el.type).toBe(UIType.Tab);
     });
@@ -473,10 +463,10 @@ describe("useLayout", () => {
         createLayout({
           children: [
             createLayout({
-              children: [createTab({ title: "Hello 1", id: "1", data: { n: 1 } })],
+              children: [createTab({ title: "Hello 1", data: { n: 1 } })],
             }),
             createLayout({
-              children: [createTab({ title: "Hello 2", id: "2", data: { n: 4 } })],
+              children: [createTab({ title: "Hello 2", data: { n: 4 } })],
             }),
           ],
         })
@@ -490,7 +480,7 @@ describe("useLayout", () => {
     it("should throw when tab is not found", () => {
       const layout = transformLayoutTemplate(
         createLayout({
-          children: [createTab({ title: "1", id: "1" }), createTab({ title: "2", id: "2" })],
+          children: [createTab({ title: "1" }), createTab({ title: "2" })],
         })
       );
 
@@ -502,15 +492,15 @@ describe("useLayout", () => {
     it("should toggle tab", () => {
       const layout = transformLayoutTemplate(
         createLayout({
-          children: [createTab({ title: "1", id: "1" }), createTab({ title: "2", id: "2" })],
+          children: [createTab({ title: "1" }), createTab({ title: "2" })],
         })
       );
 
-      expect(layout.active).toBe("1");
+      expect(layout.active).toBe(layout.children[0].id);
 
-      useToggleTab("2", layout);
+      useToggleTab(layout.children[1].id, layout);
 
-      expect(layout.active).toBe("2");
+      expect(layout.active).toBe(layout.children[1].id);
     });
   });
 
@@ -520,10 +510,10 @@ describe("useLayout", () => {
         createLayout({
           children: [
             createLayout({
-              children: [createTab({ title: "Hello 1", id: "1", data: { n: 1 } })],
+              children: [createTab({ title: "Hello 1", data: { n: 1 } })],
             }),
             createLayout({
-              children: [createTab({ title: "Hello 2", id: "2", data: { n: 4 } })],
+              children: [createTab({ title: "Hello 2", data: { n: 4 } })],
             }),
           ],
         })
@@ -537,7 +527,7 @@ describe("useLayout", () => {
     it("should throw when tab is not found", () => {
       const layout = transformLayoutTemplate(
         createLayout({
-          children: [createTab({ title: "1", id: "1" }), createTab({ title: "2", id: "2" })],
+          children: [createTab({ title: "1" }), createTab({ title: "2" })],
         })
       );
 
@@ -546,57 +536,61 @@ describe("useLayout", () => {
       );
     });
 
-    it("should throw when tab is not found", () => {
+    it("should close and remove tab", () => {
       const layout = transformLayoutTemplate(
         createLayout({
-          children: [createTab({ title: "1", id: "1" }), createTab({ title: "2", id: "2" })],
+          children: [createTab({ title: "1" }), createTab({ title: "2" })],
         })
       );
 
-      useCloseTab("1", layout);
+      const expectedId = layout.children[1].id;
 
-      expect(layout.active).toBe("2");
+      useCloseTab(layout.children[0].id, layout);
+
+      expect(layout.active).toBe(expectedId);
       expect(layout.children.length).toBe(1);
-      expect(layout.children[0].id).toBe("2");
     });
 
     it("should remove layout if it have no tabs, and have a parent", () => {
       const parent = transformLayoutTemplate(
         createLayout({
           children: [
-            createLayout({ children: [createTab({ title: "1", id: "1" })] }),
+            createLayout({ children: [createTab({ title: "1" })] }),
             createLayout({
-              children: [createTab({ title: "2", id: "2" }), createTab({ title: "3", id: "3" })],
+              children: [createTab({ title: "2" }), createTab({ title: "3" })],
             }),
-            createLayout({ children: [createTab({ title: "4", id: "4" })] }),
+            createLayout({ children: [createTab({ title: "4" })] }),
           ],
         })
       ) as unknown as Layout<Layout>;
 
       const layout = parent.children[0];
 
-      useCloseTab("1", layout);
+      const layout2Ids = parent.children[1].children.map((child) => child.id);
+      const layout3Ids = parent.children[2].children.map((child) => child.id);
+
+      useCloseTab(layout.children[0].id, layout);
 
       expect(parent.children.length).toBe(2);
 
       expect(parent.children[0].children.length).toBe(2);
-      expect(parent.children[0].children[0].id).toBe("2");
-      expect(parent.children[0].children[1].id).toBe("3");
+      expect(parent.children[0].children[0].id).toBe(layout2Ids[0]);
+      expect(parent.children[0].children[1].id).toBe(layout2Ids[1]);
 
       expect(parent.children[1].children.length).toBe(1);
-      expect(parent.children[1].children[0].id).toBe("4");
+      expect(parent.children[1].children[0].id).toBe(layout3Ids[0]);
     });
 
     it("should transform parent to Layout<Tab> if the number of layouts after removing the layout === 1", () => {
       const parent = transformLayoutTemplate(
         createLayout({
           children: [
-            createLayout({ children: [createTab({ title: "1", id: "1" })] }),
+            createLayout({ children: [createTab({ title: "1" })] }),
             createLayout({
               children: [
-                createTab({ title: "2", id: "2" }),
-                createTab({ title: "3", id: "3" }),
-                createTab({ title: "4", id: "4" }),
+                createTab({ title: "2", data: { id: 2 } }),
+                createTab({ title: "3", data: { id: 3 } }),
+                createTab({ title: "4", data: { id: 4 } }),
               ],
             }),
           ],
@@ -606,13 +600,44 @@ describe("useLayout", () => {
 
       const layout = parent.children[0];
 
-      useCloseTab("1", layout);
+      useCloseTab(layout.children[0].id, layout);
 
       expect(parent.children.length).toBe(3);
-      expect(parent.children[0].id).toBe("2");
-      expect(parent.children[1].id).toBe("3");
-      expect(parent.children[2].id).toBe("4");
+      expect((parent.children[0] as unknown as Tab).title).toBe("2");
+      expect((parent.children[0] as unknown as Tab).data).toStrictEqual({ id: 2 });
+      expect((parent.children[1] as unknown as Tab).title).toBe("3");
+      expect((parent.children[1] as unknown as Tab).data).toStrictEqual({ id: 3 });
+      expect((parent.children[2] as unknown as Tab).title).toBe("4");
+      expect((parent.children[2] as unknown as Tab).data).toStrictEqual({ id: 4 });
       expect(parent.direction).toBe(Direction.Row);
+    });
+
+    it.only("should transform parent to the only layout remaining", () => {
+      const parent = transformLayoutTemplate(
+        createLayout({
+          direction: Direction.Column,
+          children: [
+            createLayout({
+              children: [
+                createLayout({ children: [createTab({ title: "1", data: { id: 1 } })] }),
+                createLayout({ children: [createTab({ title: "2", data: { id: 2 } })] }),
+              ],
+            }),
+            createLayout({ children: [createTab({ title: "3", data: { id: 3 } })] }),
+          ],
+        })
+      ) as unknown as Layout<Layout>;
+
+      const layout = parent.children[1];
+
+      useCloseTab(layout.children[0].id, layout);
+
+      expect(parent.direction).toBe(Direction.Row);
+      expect(parent.children.length).toBe(2);
+      expect(parent.children[0].children[0].title).toBe("1");
+      expect(parent.children[0].children[0].data).toStrictEqual({ id: 1 });
+      expect(parent.children[1].children[0].title).toBe("2");
+      expect(parent.children[1].children[0].data).toStrictEqual({ id: 2 });
     });
   });
 
@@ -622,10 +647,10 @@ describe("useLayout", () => {
         createLayout({
           children: [
             createLayout({
-              children: [createTab({ title: "Hello 1", id: "1", data: { n: 1 } })],
+              children: [createTab({ title: "Hello 1", data: { n: 1 } })],
             }),
             createLayout({
-              children: [createTab({ title: "Hello 2", id: "2", data: { n: 4 } })],
+              children: [createTab({ title: "Hello 2", data: { n: 4 } })],
             }),
           ],
         })
@@ -638,65 +663,34 @@ describe("useLayout", () => {
 
     it("should add tab", () => {
       const layout = transformLayoutTemplate(
-        createLayout({ children: [createTab({ title: "1", id: "1" })] })
+        createLayout({ children: [createTab({ title: "1" })] })
       );
 
-      useAddTab(createTab({ title: "2", id: "2" }), layout);
+      useAddTab(createTab({ title: "2", data: { id: 2 } }), layout);
 
       expect(layout.children.length).toBe(2);
-      expect(layout.children[0].id).toBe("1");
-      expect(layout.children[1].id).toBe("2");
+      expect(layout.children[1].data).toStrictEqual({ id: 2 });
     });
 
     it("should add tab at given position", () => {
       const layout = transformLayoutTemplate(
         createLayout({
           children: [
-            createTab({ title: "1", id: "1" }),
-            createTab({ title: "2", id: "2" }),
-            createTab({ title: "3", id: "3" }),
+            createTab({ title: "1" }),
+            createTab({ title: "2" }),
+            createTab({ title: "3" }),
           ],
         })
       );
 
-      useAddTab(createTab({ title: "5", id: "5" }), layout, 1);
+      useAddTab(createTab({ title: "5", data: { id: 5 } }), layout, 1);
 
       expect(layout.children.length).toBe(4);
-      expect(layout.children[0].id).toBe("1");
-      expect(layout.children[1].id).toBe("5");
-      expect(layout.children[2].id).toBe("2");
-      expect(layout.children[3].id).toBe("3");
-    });
-
-    it("should add tab", () => {
-      const layout = transformLayoutTemplate(
-        createLayout({ children: [createTab({ title: "1", id: "1" })] })
-      );
-
-      useAddTab(createTab({ title: "2", id: "2" }), layout);
-
-      expect(layout.children.length).toBe(2);
-      expect(layout.children[0].id).toBe("1");
-      expect(layout.children[1].id).toBe("2");
-    });
-
-    it("should not add tab with an existing id", () => {
-      const layout = transformLayoutTemplate(
-        createLayout({
-          children: [
-            createTab({ title: "1", id: "1" }),
-            createTab({ title: "2", id: "2" }),
-            createTab({ title: "3", id: "3" }),
-          ],
-        })
-      );
-
-      useAddTab(createTab({ title: "1", id: "1" }), layout);
-
-      expect(layout.children.length).toBe(3);
-      expect(layout.children[0].id).toBe("1");
-      expect(layout.children[1].id).toBe("2");
-      expect(layout.children[2].id).toBe("3");
+      expect(layout.children[0].title).toBe("1");
+      expect(layout.children[1].title).toBe("5");
+      expect(layout.children[1].data).toStrictEqual({ id: 5 });
+      expect(layout.children[2].title).toBe("2");
+      expect(layout.children[3].title).toBe("3");
     });
   });
 });

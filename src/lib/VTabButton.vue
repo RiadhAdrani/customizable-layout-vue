@@ -15,15 +15,12 @@ const close = () => {
 };
 
 const onDragStart = (e: DragEvent) => {
-  const parents = getParentsHierarchy(item).reverse().slice(1);
-
   const data: DraggedTab = {
     id: item.id,
     type: UIType.Tab,
     title: item.title,
     data: item.data,
     signature: "__dragged__tab__",
-    parents,
   };
 
   e.dataTransfer?.setData("text/plain", JSON.stringify(data));

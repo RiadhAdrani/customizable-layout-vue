@@ -10,7 +10,7 @@ import {
   DraggedTab,
   TabTemplate,
 } from "./types";
-import { getType, getTab, createTab, findUiByPath, getRoot } from "./useLayout";
+import { getType, getTab, createTab, findUiByPath, getRoot, findTab } from "./useLayout";
 import VTabButton from "./VTabButton.vue";
 import VTabContent from "./VTabContent.vue";
 
@@ -45,7 +45,6 @@ const close = (id: string) => {
 };
 
 const dropped = ({ side, ev }: { ev: DragEvent; side: Side }) => {
-  // TODO : create tab with events.onDrop
   let data: Record<string, unknown> = {};
   let tab: TabTemplate | undefined = undefined;
 
@@ -56,27 +55,26 @@ const dropped = ({ side, ev }: { ev: DragEvent; side: Side }) => {
   if (
     data.type === UIType.Tab &&
     data.signature === "__dragged__tab__" &&
-    typeof data.id === "string" &&
-    Array.isArray(data.parents)
+    typeof data.id === "string"
   ) {
     const $data = data as unknown as DraggedTab;
-    // TODO : we should remove the tab from its original position and create it here
 
-    const $tab = findUiByPath(
-      $data.id,
-      $data.parents,
-      getRoot(template) as unknown as Layout<Layout>
-    ) as Tab;
+    const $exist = findTab(data.id, template);
 
-    actions.useCloseTab($tab.id, $tab.parent);
+    if ($exist && template.children.length === 1) {
+      return;
+    }
+
+    const $tab = findTab($data.id, getRoot(template));
 
     tab = createTab($data);
+
+    if (tab && $tab) {
+      actions.useOnDrop(tab, template as Layout, side);
+      actions.useCloseTab($tab.id, $tab.parent);
+    }
   } else {
     // TODO : allow user to create tab with drag event
-  }
-
-  if (tab) {
-    actions.useOnDrop(tab, template as Layout, side);
   }
 };
 </script>
@@ -121,6 +119,7 @@ const dropped = ({ side, ev }: { ev: DragEvent; side: Side }) => {
   display: flex;
   flex-direction: column;
   flex: 1;
+  padding: 2px;
 }
 
 .clv__tabs-container {

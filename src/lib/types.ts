@@ -23,12 +23,10 @@ export interface BaseUI {
 export interface TabTemplate<T = Record<string, unknown>> {
   type: UIType.Tab;
   title: string;
-  id?: string;
   data?: T;
 }
 
 export interface LayoutTemplate {
-  id?: string;
   type: UIType.Layout;
   children: Array<TabTemplate> | Array<LayoutTemplate>;
   direction?: Direction;
@@ -50,11 +48,6 @@ export interface Layout<T = Tab> extends BaseUI {
   active?: string;
 }
 
-export type onChildRemoved = (id: string, parent: string) => void;
-export type onChildAdded = (id: string, parent: string, position?: number) => void;
-export type onTabToggled = (id: string, parent: string) => void;
-export type onDrop = <T = unknown>(data: T) => Tab;
-
 export interface LayoutActions {
   useToggleTab: (id: string, layout: Layout) => void;
   useCloseTab: (id: string, layout: Layout) => void;
@@ -67,7 +60,6 @@ export interface LayoutEvents {
 }
 
 export interface DraggedTab extends TabTemplate<Record<string, unknown>> {
-  parents: Array<string>;
   id: string;
   signature: "__dragged__tab__";
 }
