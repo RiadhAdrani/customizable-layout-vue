@@ -55,9 +55,11 @@ export interface LayoutActions {
   onDrop: (data: Record<string, unknown>, layoutId: string, side: Side) => void;
 }
 
-export interface DraggedTab extends TabTemplate<Record<string, unknown>> {
+export type DraggedSignature = "__dragged__tab__";
+
+export interface DraggedTab extends Omit<TabTemplate<Record<string, unknown>>, "title"> {
   id: string;
-  signature: "__dragged__tab__";
+  signature: DraggedSignature;
 }
 
 export interface UseLayoutOptions {

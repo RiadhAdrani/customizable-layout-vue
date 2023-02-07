@@ -1,5 +1,5 @@
-import { it, describe, expect } from "vitest";
-import { Direction, Layout, Tab, UIType } from "../types";
+import { it, describe, expect, beforeEach } from "vitest";
+import { Direction, DraggedTab, Layout, Side, Tab, UIType } from "../types";
 import {
   createTab,
   createLayout,
@@ -15,6 +15,7 @@ import {
   getParentsHierarchy,
   findUiByPath,
   findLayout,
+  useOnDrop,
 } from "../useLayout";
 
 describe("useLayout", () => {
@@ -755,6 +756,407 @@ describe("useLayout", () => {
       expect(layout.children[1].data).toStrictEqual({ id: 5 });
       expect(layout.children[2].title).toBe("2");
       expect(layout.children[3].title).toBe("3");
+    });
+  });
+
+  describe("useOnDrop", () => {
+    it("should add custom tab when dragged in the center", () => {
+      const layout = transformLayoutTemplate(
+        createLayout({ children: [createTab({ title: "1", data: { id: 1 } })] })
+      );
+
+      useOnDrop({ id: 2 }, layout, Side.Center, (data) => {
+        return createTab({ title: "2", data });
+      });
+
+      expect(layout.children.length).toBe(2);
+      expect(layout.children[0].data).toStrictEqual({ id: 1 });
+      expect(layout.children[1].data).toStrictEqual({ id: 2 });
+    });
+
+    it("should move existing tab when dragged in the center", () => {
+      const parent = transformLayoutTemplate(
+        createLayout({
+          children: [
+            createLayout({
+              children: [
+                createTab({ title: "1", data: { id: 1 } }),
+                createTab({ title: "2", data: { id: 2 } }),
+              ],
+            }),
+            createLayout({
+              children: [
+                createTab({ title: "3", data: { id: 3 } }),
+                createTab({ title: "4", data: { id: 4 } }),
+              ],
+            }),
+          ],
+        })
+      ) as unknown as Layout<Layout>;
+
+      const layout = parent.children[0];
+
+      const data: DraggedTab = {
+        type: UIType.Tab,
+        signature: "__dragged__tab__",
+        id: parent.children[1].children[0].id,
+      };
+
+      useOnDrop(data, layout, Side.Center, () => undefined);
+
+      expect(layout.children.length).toBe(3);
+      expect(layout.children[0].data).toStrictEqual({ id: 1 });
+      expect(layout.children[0].parent === layout).toBe(true);
+      expect(layout.children[1].data).toStrictEqual({ id: 2 });
+      expect(layout.children[1].parent === layout).toBe(true);
+      expect(layout.children[2].data).toStrictEqual({ id: 3 });
+      expect(layout.children[2].parent === layout).toBe(true);
+      expect(layout.children[2].data).toStrictEqual({ id: 3 });
+      expect(parent.children[1].children.length).toBe(1);
+      expect(parent.children[1].children[0].data).toStrictEqual({ id: 4 });
+      expect(parent.children[1].children[0].parent === parent.children[1]).toBe(true);
+    });
+
+    it("should transform layout to column and add a new layout with a tab at the top (beginning)", () => {
+      const layout = transformLayoutTemplate(
+        createLayout({ children: [createTab({ title: "1", data: { id: 1 } })] })
+      );
+
+      useOnDrop({ id: 2 }, layout, Side.Top, (data) => {
+        return createTab({ title: "2", data });
+      });
+
+      expect(layout.children.length).toBe(2);
+      expect(getType(layout.children)).toBe(UIType.Layout);
+      expect(layout.active).toBeUndefined();
+      expect(layout.direction).toBe(Direction.Column);
+
+      const added = layout.children[0] as unknown as Layout;
+      const old = layout.children[1] as unknown as Layout;
+
+      expect(added.children.length).toBe(1);
+      expect(added.parent === (layout as unknown as Layout<Layout>)).toBe(true);
+      expect(added.children[0].data).toStrictEqual({ id: 2 });
+      expect(added.children[0].title).toBe("2");
+      expect(added.children[0].parent === added).toBe(true);
+
+      expect(old.children.length).toBe(1);
+      expect(old.parent === (layout as unknown as Layout<Layout>)).toBe(true);
+      expect(old.children[0].data).toStrictEqual({ id: 1 });
+      expect(old.children[0].title).toBe("1");
+      expect(old.children[0].parent === old).toBe(true);
+    });
+
+    it("should transform layout to column and add a new layout with a tab at the bottom (end)", () => {
+      const layout = transformLayoutTemplate(
+        createLayout({ children: [createTab({ title: "1", data: { id: 1 } })] })
+      );
+
+      useOnDrop({ id: 2 }, layout, Side.Bottom, (data) => {
+        return createTab({ title: "2", data });
+      });
+
+      expect(layout.children.length).toBe(2);
+      expect(getType(layout.children)).toBe(UIType.Layout);
+      expect(layout.active).toBeUndefined();
+      expect(layout.direction).toBe(Direction.Column);
+
+      const added = layout.children[1] as unknown as Layout;
+      const old = layout.children[0] as unknown as Layout;
+
+      expect(added.children.length).toBe(1);
+      expect(added.parent === (layout as unknown as Layout<Layout>)).toBe(true);
+      expect(added.children[0].data).toStrictEqual({ id: 2 });
+      expect(added.children[0].title).toBe("2");
+      expect(added.children[0].parent === added).toBe(true);
+
+      expect(old.children.length).toBe(1);
+      expect(old.parent === (layout as unknown as Layout<Layout>)).toBe(true);
+      expect(old.children[0].data).toStrictEqual({ id: 1 });
+      expect(old.children[0].title).toBe("1");
+      expect(old.children[0].parent === old).toBe(true);
+    });
+
+    it("should transform layout to row and add a new layout with a tab to the left (beginning)", () => {
+      const layout = transformLayoutTemplate(
+        createLayout({ children: [createTab({ title: "1", data: { id: 1 } })] })
+      );
+
+      useOnDrop({ id: 2 }, layout, Side.Left, (data) => {
+        return createTab({ title: "2", data });
+      });
+
+      expect(layout.children.length).toBe(2);
+      expect(getType(layout.children)).toBe(UIType.Layout);
+      expect(layout.active).toBeUndefined();
+      expect(layout.direction).toBe(Direction.Row);
+
+      const added = layout.children[0] as unknown as Layout;
+      const old = layout.children[1] as unknown as Layout;
+
+      expect(added.children.length).toBe(1);
+      expect(added.parent === (layout as unknown as Layout<Layout>)).toBe(true);
+      expect(added.children[0].data).toStrictEqual({ id: 2 });
+      expect(added.children[0].title).toBe("2");
+      expect(added.children[0].parent === added).toBe(true);
+
+      expect(old.children.length).toBe(1);
+      expect(old.parent === (layout as unknown as Layout<Layout>)).toBe(true);
+      expect(old.children[0].data).toStrictEqual({ id: 1 });
+      expect(old.children[0].title).toBe("1");
+      expect(old.children[0].parent === old).toBe(true);
+    });
+
+    it("should transform layout to column and add a new layout with a tab to the right (end)", () => {
+      const layout = transformLayoutTemplate(
+        createLayout({ children: [createTab({ title: "1", data: { id: 1 } })] })
+      );
+
+      useOnDrop({ id: 2 }, layout, Side.Right, (data) => {
+        return createTab({ title: "2", data });
+      });
+
+      expect(layout.children.length).toBe(2);
+      expect(getType(layout.children)).toBe(UIType.Layout);
+      expect(layout.active).toBeUndefined();
+      expect(layout.direction).toBe(Direction.Row);
+
+      const added = layout.children[1] as unknown as Layout;
+      const old = layout.children[0] as unknown as Layout;
+
+      expect(added.children.length).toBe(1);
+      expect(added.parent === (layout as unknown as Layout<Layout>)).toBe(true);
+      expect(added.children[0].data).toStrictEqual({ id: 2 });
+      expect(added.children[0].title).toBe("2");
+      expect(added.children[0].parent === added).toBe(true);
+
+      expect(old.children.length).toBe(1);
+      expect(old.parent === (layout as unknown as Layout<Layout>)).toBe(true);
+      expect(old.children[0].data).toStrictEqual({ id: 1 });
+      expect(old.children[0].title).toBe("1");
+      expect(old.children[0].parent === old).toBe(true);
+    });
+
+    describe("Parent with same direction as drop", () => {
+      let parent: Layout<Layout>;
+
+      beforeEach(() => {
+        parent = transformLayoutTemplate(
+          createLayout({
+            children: [
+              createLayout({ children: [createTab({ title: "1", data: { id: 1 } })] }),
+              createLayout({ children: [createTab({ title: "2", data: { id: 2 } })] }),
+              createLayout({ children: [createTab({ title: "3", data: { id: 3 } })] }),
+            ],
+          })
+        ) as unknown as Layout<Layout>;
+      });
+
+      it("[Top] should add a new layout to the parent before the target layout", () => {
+        parent.direction = Direction.Column;
+
+        const layout = parent.children[1];
+
+        useOnDrop({ id: "test" }, layout, Side.Top, (data) => {
+          return createTab({ title: "test", data });
+        });
+
+        expect(parent.children.length).toBe(4);
+
+        const lt = parent.children[1];
+        expect(lt.parent === parent).toBe(true);
+        expect(lt.children.length).toBe(1);
+        expect(lt.children[0].data).toStrictEqual({ id: "test" });
+        expect(lt.children[0].title).toStrictEqual("test");
+
+        const l1 = parent.children[0];
+        expect(l1.parent === parent).toBe(true);
+        expect(l1.children.length).toBe(1);
+        expect(l1.children[0].data).toStrictEqual({ id: 1 });
+        expect(l1.children[0].title).toStrictEqual("1");
+
+        const l2 = parent.children[2];
+        expect(l2.parent === parent).toBe(true);
+        expect(l2.children.length).toBe(1);
+        expect(l2.children[0].data).toStrictEqual({ id: 2 });
+        expect(l2.children[0].title).toStrictEqual("2");
+
+        const l3 = parent.children[3];
+        expect(l3.parent === parent).toBe(true);
+        expect(l3.children.length).toBe(1);
+        expect(l3.children[0].data).toStrictEqual({ id: 3 });
+        expect(l3.children[0].title).toStrictEqual("3");
+      });
+
+      it("[Bottom] should add a new layout to the parent before the target layout", () => {
+        parent.direction = Direction.Column;
+
+        const layout = parent.children[1];
+
+        useOnDrop({ id: "test" }, layout, Side.Bottom, (data) => {
+          return createTab({ title: "test", data });
+        });
+
+        expect(parent.children.length).toBe(4);
+
+        const lt = parent.children[2];
+        expect(lt.parent === parent).toBe(true);
+        expect(lt.children.length).toBe(1);
+        expect(lt.children[0].data).toStrictEqual({ id: "test" });
+        expect(lt.children[0].title).toStrictEqual("test");
+
+        const l1 = parent.children[0];
+        expect(l1.parent === parent).toBe(true);
+        expect(l1.children.length).toBe(1);
+        expect(l1.children[0].data).toStrictEqual({ id: 1 });
+        expect(l1.children[0].title).toStrictEqual("1");
+
+        const l2 = parent.children[1];
+        expect(l2.parent === parent).toBe(true);
+        expect(l2.children.length).toBe(1);
+        expect(l2.children[0].data).toStrictEqual({ id: 2 });
+        expect(l2.children[0].title).toStrictEqual("2");
+
+        const l3 = parent.children[3];
+        expect(l3.parent === parent).toBe(true);
+        expect(l3.children.length).toBe(1);
+        expect(l3.children[0].data).toStrictEqual({ id: 3 });
+        expect(l3.children[0].title).toStrictEqual("3");
+      });
+
+      it("[Left] should add a new layout to the parent before the target layout", () => {
+        const layout = parent.children[1];
+
+        useOnDrop({ id: "test" }, layout, Side.Left, (data) => {
+          return createTab({ title: "test", data });
+        });
+
+        expect(parent.children.length).toBe(4);
+
+        const lt = parent.children[1];
+        expect(lt.parent === parent).toBe(true);
+        expect(lt.children.length).toBe(1);
+        expect(lt.children[0].data).toStrictEqual({ id: "test" });
+        expect(lt.children[0].title).toStrictEqual("test");
+
+        const l1 = parent.children[0];
+        expect(l1.parent === parent).toBe(true);
+        expect(l1.children.length).toBe(1);
+        expect(l1.children[0].data).toStrictEqual({ id: 1 });
+        expect(l1.children[0].title).toStrictEqual("1");
+
+        const l2 = parent.children[2];
+        expect(l2.parent === parent).toBe(true);
+        expect(l2.children.length).toBe(1);
+        expect(l2.children[0].data).toStrictEqual({ id: 2 });
+        expect(l2.children[0].title).toStrictEqual("2");
+
+        const l3 = parent.children[3];
+        expect(l3.parent === parent).toBe(true);
+        expect(l3.children.length).toBe(1);
+        expect(l3.children[0].data).toStrictEqual({ id: 3 });
+        expect(l3.children[0].title).toStrictEqual("3");
+      });
+
+      it("[Right] should add a new layout to the parent before the target layout", () => {
+        const layout = parent.children[1];
+
+        useOnDrop({ id: "test" }, layout, Side.Right, (data) => {
+          return createTab({ title: "test", data });
+        });
+
+        expect(parent.children.length).toBe(4);
+
+        const lt = parent.children[2];
+        expect(lt.parent === parent).toBe(true);
+        expect(lt.children.length).toBe(1);
+        expect(lt.children[0].data).toStrictEqual({ id: "test" });
+        expect(lt.children[0].title).toStrictEqual("test");
+
+        const l1 = parent.children[0];
+        expect(l1.parent === parent).toBe(true);
+        expect(l1.children.length).toBe(1);
+        expect(l1.children[0].data).toStrictEqual({ id: 1 });
+        expect(l1.children[0].title).toStrictEqual("1");
+
+        const l2 = parent.children[1];
+        expect(l2.parent === parent).toBe(true);
+        expect(l2.children.length).toBe(1);
+        expect(l2.children[0].data).toStrictEqual({ id: 2 });
+        expect(l2.children[0].title).toStrictEqual("2");
+
+        const l3 = parent.children[3];
+        expect(l3.parent === parent).toBe(true);
+        expect(l3.children.length).toBe(1);
+        expect(l3.children[0].data).toStrictEqual({ id: 3 });
+        expect(l3.children[0].title).toStrictEqual("3");
+      });
+    });
+
+    describe("Parent with different direction of drop", () => {
+      let parent: Layout<Layout>;
+
+      beforeEach(() => {
+        parent = transformLayoutTemplate(
+          createLayout({
+            children: [
+              createLayout({ children: [createTab({ title: "1", data: { id: 1 } })] }),
+              createLayout({ children: [createTab({ title: "2", data: { id: 2 } })] }),
+              createLayout({ children: [createTab({ title: "3", data: { id: 3 } })] }),
+            ],
+          })
+        ) as unknown as Layout<Layout>;
+      });
+
+      it.each([
+        [Direction.Row, Side.Top, { direction: Direction.Column, old: 1, new: 0 }],
+        [Direction.Row, Side.Bottom, { direction: Direction.Column, old: 0, new: 1 }],
+        [Direction.Column, Side.Left, { direction: Direction.Row, old: 1, new: 0 }],
+        [Direction.Column, Side.Right, { direction: Direction.Row, old: 0, new: 1 }],
+      ])("parent is [%s] dropped at [%s]", (direction, side, tt) => {
+        parent.direction = direction;
+        const layout = parent.children[0];
+
+        useOnDrop({ id: "test" }, layout, side, (data) => {
+          return createTab({ title: "test", data });
+        });
+
+        expect(parent.children.length).toBe(3);
+
+        const lt = parent.children[0] as unknown as Layout<Layout>;
+        expect(getType(lt.children)).toBe(UIType.Layout);
+        expect(lt.direction).toBe(tt.direction);
+        expect(lt.parent === parent).toBe(true);
+        expect(lt.children.length).toBe(2);
+
+        const newLayout = lt.children[tt.new];
+        expect(newLayout.parent === lt).toBe(true);
+        expect(newLayout.children[0].data).toStrictEqual({ id: "test" });
+        expect(newLayout.children[0].title).toStrictEqual("test");
+        expect(newLayout.children[0].parent === newLayout).toBe(true);
+
+        const oldLayout = lt.children[tt.old];
+        expect(oldLayout.parent === lt).toBe(true);
+        expect(oldLayout.children[0].data).toStrictEqual({ id: 1 });
+        expect(oldLayout.children[0].title).toStrictEqual("1");
+        expect(oldLayout.children[0].parent === oldLayout).toBe(true);
+
+        const l2 = parent.children[1];
+        expect(getType(l2.children)).toBe(UIType.Tab);
+        expect(l2.parent === parent).toBe(true);
+        expect(l2.children.length).toBe(1);
+        expect(l2.children[0].parent === l2).toBe(true);
+        expect(l2.children[0].data).toStrictEqual({ id: 2 });
+        expect(l2.children[0].title).toBe("2");
+
+        const l3 = parent.children[2];
+        expect(getType(l3.children)).toBe(UIType.Tab);
+        expect(l3.parent === parent).toBe(true);
+        expect(l3.children.length).toBe(1);
+        expect(l3.children[0].parent === l3).toBe(true);
+        expect(l3.children[0].data).toStrictEqual({ id: 3 });
+        expect(l3.children[0].title).toBe("3");
+      });
     });
   });
 });

@@ -273,13 +273,13 @@ export const useAddTab = (tab: TabTemplate, layout: Layout, position = Infinity)
 };
 
 export const useOnDrop = (
-  data: Record<string, unknown>,
+  data: Record<string, unknown> | DraggedTab,
   layout: Layout,
   side: Side,
   factory: (data: Record<string, unknown>) => TabTemplate | undefined
 ) => {
   let tab: TabTemplate | undefined = undefined;
-  let dragged: Tab | undefined = undefined;
+  let dragged: boolean = false;
 
   const addAtSide = (direction: Direction, before: boolean) => {
     if (!tab) {
@@ -312,6 +312,7 @@ export const useOnDrop = (
 
       const $children = [newLayout, oldLayout] as unknown as Array<Tab>;
 
+      layout.active = undefined;
       layout.direction = direction;
       layout.children = before ? $children : $children.reverse();
     } else {
@@ -334,12 +335,15 @@ export const useOnDrop = (
 
     const $tab = findTab($data.id, getRoot(layout));
 
-    dragged = $tab;
-    tab = createTab($data);
-  } else {
-    const $tab = factory(data);
+    if (!$tab) {
+      throw `Unexpected State (useOnDrop): dragged tab with id "${$data.id}" does not exist.`;
+    }
 
-    tab ??= $tab;
+    dragged = true;
+
+    tab = createTab({ title: $tab.title, data: $tab.data });
+  } else {
+    tab ??= factory(data as Record<string, unknown>);
   }
 
   if (tab) {
@@ -368,7 +372,7 @@ export const useOnDrop = (
   }
 
   if (dragged) {
-    const tab = findTab(dragged.id, getRoot(dragged.parent)) as Tab;
+    const tab = findTab((data as DraggedTab).id, getRoot(layout)) as Tab;
 
     useCloseTab(tab.id, tab.parent);
   }

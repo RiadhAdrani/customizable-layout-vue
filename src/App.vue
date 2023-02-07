@@ -8,20 +8,16 @@ const options = useLayout(
     direction: Direction.Column,
     children: [
       createLayout({
-        children: [createTab({ title: "Tab 1" })],
-      }),
-      createLayout({
         children: [
-          createLayout({
-            children: [createTab({ title: "Tab 3" })],
-          }),
-          createLayout({
-            children: [createTab({ title: "Tab 5" })],
-          }),
+          createTab({ title: "1", data: { id: 1 } }),
+          createTab({ title: "2", data: { id: 2 } }),
         ],
       }),
       createLayout({
-        children: [createTab({ title: "Tab 7" })],
+        children: [
+          createTab({ title: "3", data: { id: 3 } }),
+          createTab({ title: "4", data: { id: 4 } }),
+        ],
       }),
     ],
   }),
