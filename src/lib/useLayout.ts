@@ -11,6 +11,7 @@ import {
   Direction,
   LayoutActions,
   Side,
+  DraggedTab,
 } from "./types";
 import { v4 as useId } from "uuid";
 
@@ -50,8 +51,6 @@ export const transformLayoutTemplate = (
     layout.children = children.map((child) => transformTabTemplate(child, layout));
 
     const ids = new Set(layout.children.map((item) => item.id));
-
-    // TODO throw error with the duplicate id.
 
     if (ids.size !== layout.children.length) {
       throw `Duplicate Id: Duplicate id found.`;
@@ -249,51 +248,33 @@ export const useAddTab = (tab: TabTemplate, layout: Layout, position = Infinity)
   layout.children = [...layout.children.slice(0, pos), $tab, ...layout.children.slice(pos)];
 };
 
-export const useOnDrop = (tab: TabTemplate, layout: Layout, side: Side) => {
+export const useOnDrop = (data: Record<string, unknown>, layout: Layout, side: Side) => {
+  let tab: TabTemplate | undefined = undefined;
+  let dragged: Tab | undefined = undefined;
+
   const addAtSide = (direction: Direction, before: boolean) => {
-    if (layout.parent) {
-      if (layout.parent.direction === direction) {
-        const newLayout = transformLayoutTemplate(
-          createLayout({ children: [tab] }),
-          layout.parent as unknown as Layout<Layout>
-        );
+    if (!tab) {
+      throw "Invalid Value: Tab is undefined.";
+    }
 
-        const index = layout.parent.children.indexOf(layout) + (before ? 0 : 1);
-
-        layout.parent.children = [
-          ...layout.parent.children.slice(0, index),
-          newLayout,
-          ...layout.parent.children.slice(index),
-        ];
-      } else {
-        const oldLayout = transformLayoutTemplate(
-          createLayout({
-            children: layout.children.map((child) =>
-              createTab({ title: child.title, data: child.data })
-            ),
-          }),
-          layout as unknown as Layout<Layout>
-        );
-
-        const newLayout = transformLayoutTemplate(
-          createLayout({ children: [tab] }),
-          layout as unknown as Layout<Layout>
-        );
-
-        const $children = [newLayout, oldLayout] as unknown as Array<Tab>;
-
-        layout.direction = direction;
-        layout.children = before ? $children : $children.reverse();
-      }
-    } else {
-      const oldLayout = transformLayoutTemplate(
-        createLayout({
-          children: layout.children.map((child) =>
-            createTab({ title: child.title, data: child.data })
-          ),
-        }),
-        layout as unknown as Layout<Layout>
+    if (layout.parent && layout.parent.direction === direction) {
+      const newLayout = transformLayoutTemplate(
+        createLayout({ children: [tab] }),
+        layout.parent as unknown as Layout<Layout>
       );
+
+      const index = layout.parent.children.indexOf(layout) + (before ? 0 : 1);
+
+      layout.parent.children = [
+        ...layout.parent.children.slice(0, index),
+        newLayout,
+        ...layout.parent.children.slice(index),
+      ];
+    } else if (!layout.parent || (layout.parent && layout.parent.direction !== direction)) {
+      const oldLayout = { ...layout };
+
+      oldLayout.parent = layout as unknown as Layout<Layout>;
+      oldLayout.children.forEach((child) => (child.parent = oldLayout));
 
       const newLayout = transformLayoutTemplate(
         createLayout({ children: [tab] }),
@@ -304,30 +285,60 @@ export const useOnDrop = (tab: TabTemplate, layout: Layout, side: Side) => {
 
       layout.direction = direction;
       layout.children = before ? $children : $children.reverse();
+    } else {
+      throw "Unhandled condition (useOnDrop)";
     }
   };
 
-  switch (side) {
-    case Side.Center: {
-      useAddTab(tab, layout);
-      break;
+  if (
+    data.type === UIType.Tab &&
+    data.signature === "__dragged__tab__" &&
+    typeof data.id === "string"
+  ) {
+    const $data = data as unknown as DraggedTab;
+
+    const $exist = findTab(data.id, layout);
+
+    if ($exist && layout.children.length === 1) {
+      return;
     }
-    case Side.Top: {
-      addAtSide(Direction.Column, true);
-      break;
+
+    const $tab = findTab($data.id, getRoot(layout));
+
+    dragged = $tab;
+    tab = createTab($data);
+  } else {
+    // TODO : allow user to create tab with drag event
+  }
+
+  if (tab) {
+    switch (side) {
+      case Side.Center: {
+        useAddTab(tab, layout);
+        break;
+      }
+      case Side.Top: {
+        addAtSide(Direction.Column, true);
+        break;
+      }
+      case Side.Bottom: {
+        addAtSide(Direction.Column, false);
+        break;
+      }
+      case Side.Left: {
+        addAtSide(Direction.Row, true);
+        break;
+      }
+      case Side.Right: {
+        addAtSide(Direction.Row, false);
+        break;
+      }
     }
-    case Side.Bottom: {
-      addAtSide(Direction.Column, false);
-      break;
-    }
-    case Side.Left: {
-      addAtSide(Direction.Row, true);
-      break;
-    }
-    case Side.Right: {
-      addAtSide(Direction.Row, false);
-      break;
-    }
+  }
+
+  if (dragged) {
+    const tab = findTab(dragged.id, getRoot(dragged.parent)) as Tab;
+    useCloseTab(tab.id, tab.parent);
   }
 };
 

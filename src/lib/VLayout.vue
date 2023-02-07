@@ -46,36 +46,12 @@ const close = (id: string) => {
 
 const dropped = ({ side, ev }: { ev: DragEvent; side: Side }) => {
   let data: Record<string, unknown> = {};
-  let tab: TabTemplate | undefined = undefined;
 
   try {
     data = JSON.parse(ev.dataTransfer?.getData("text") ?? "{}");
   } catch (error) {}
 
-  if (
-    data.type === UIType.Tab &&
-    data.signature === "__dragged__tab__" &&
-    typeof data.id === "string"
-  ) {
-    const $data = data as unknown as DraggedTab;
-
-    const $exist = findTab(data.id, template);
-
-    if ($exist && template.children.length === 1) {
-      return;
-    }
-
-    const $tab = findTab($data.id, getRoot(template));
-
-    tab = createTab($data);
-
-    if (tab && $tab) {
-      actions.useOnDrop(tab, template as Layout, side);
-      actions.useCloseTab($tab.id, $tab.parent);
-    }
-  } else {
-    // TODO : allow user to create tab with drag event
-  }
+  actions.useOnDrop(data, template as Layout, side);
 };
 </script>
 

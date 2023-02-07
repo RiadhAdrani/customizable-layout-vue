@@ -52,7 +52,7 @@ export interface LayoutActions {
   useToggleTab: (id: string, layout: Layout) => void;
   useCloseTab: (id: string, layout: Layout) => void;
   useAddTab: (tab: TabTemplate, layout: Layout, position?: number) => void;
-  useOnDrop: (tab: TabTemplate, layout: Layout, side: Side) => void;
+  useOnDrop: (data: Record<string, unknown>, layout: Layout, side: Side) => void;
 }
 
 export interface LayoutEvents {

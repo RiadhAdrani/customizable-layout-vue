@@ -612,7 +612,7 @@ describe("useLayout", () => {
       expect(parent.direction).toBe(Direction.Row);
     });
 
-    it.only("should transform parent to the only layout remaining", () => {
+    it("should transform parent to the only layout remaining", () => {
       const parent = transformLayoutTemplate(
         createLayout({
           direction: Direction.Column,
