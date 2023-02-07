@@ -1,35 +1,25 @@
 <script lang="ts" setup>
 import { computed } from "vue";
-import {
-  Layout,
-  Tab,
-  UIType,
-  LayoutActions,
-  Direction,
-  Side,
-  DraggedTab,
-  TabTemplate,
-} from "./types";
-import { getType, getTab, createTab, findUiByPath, getRoot, findTab } from "./useLayout";
+import { Layout, Tab, UIType, Direction, Side, UseLayoutOutput } from "./types";
+import { getType, getTab, useOnDrop, useCloseTab, useToggleTab } from "./useLayout";
 import VTabButton from "./VTabButton.vue";
 import VTabContent from "./VTabContent.vue";
 
-const { template, actions } = defineProps<{
-  template: Layout<Tab | Layout>;
-  actions: LayoutActions;
+const { options } = defineProps<{
+  options: UseLayoutOutput;
 }>();
 
-const forLayouts = computed(() => getType(template.children) === UIType.Layout);
+const forLayouts = computed(() => getType(options.tree.children) === UIType.Layout);
 
-const isEmpty = computed(() => template.children.length === 0);
+const isEmpty = computed(() => options.tree.children.length === 0);
 
 const classList = computed(() => {
   const list = [];
 
-  if (template.direction === Direction.Row) {
+  if (options.tree.direction === Direction.Row) {
     list.push("clv__layout-container-row");
   }
-  if (template.direction === Direction.Column) {
+  if (options.tree.direction === Direction.Column) {
     list.push("clv__layout-container-col");
   }
 
@@ -37,11 +27,11 @@ const classList = computed(() => {
 });
 
 const toggle = (id: string) => {
-  actions.useToggleTab(id, template as Layout);
+  options.actions.toggleTab(id);
 };
 
 const close = (id: string) => {
-  actions.useCloseTab(id, template as Layout);
+  options.actions.closeTab(id);
 };
 
 const dropped = ({ side, ev }: { ev: DragEvent; side: Side }) => {
@@ -51,7 +41,7 @@ const dropped = ({ side, ev }: { ev: DragEvent; side: Side }) => {
     data = JSON.parse(ev.dataTransfer?.getData("text") ?? "{}");
   } catch (error) {}
 
-  actions.useOnDrop(data, template as Layout, side);
+  options.actions.onDrop(data, options.tree.id, side);
 };
 </script>
 
@@ -63,8 +53,8 @@ const dropped = ({ side, ev }: { ev: DragEvent; side: Side }) => {
       <div class="clv__tabs-container-bar">
         <!-- TODO allow dropping of tabs here  -->
         <VTabButton
-          v-for="item of (template.children as Array<Tab>)"
-          :active-id="template.active!"
+          v-for="item of (options.tree.children as Array<Tab>)"
+          :active-id="options.tree.active!"
           :item="item"
           :key="item.id"
           @toggle-tab="toggle(item.id)"
@@ -72,15 +62,17 @@ const dropped = ({ side, ev }: { ev: DragEvent; side: Side }) => {
         />
       </div>
       <VTabContent @on-drop="dropped">
-        <slot name="tab" v-bind="getTab(template.active!,(template.children as Array<Tab>))"></slot>
+        <slot
+          name="tab"
+          v-bind="getTab(options.tree.active!,(options.tree.children as Array<Tab>))"
+        ></slot>
       </VTabContent>
     </div>
     <div v-else class="clv__layouts-container" :class="classList">
       <VLayout
-        v-for="item in (template.children as Array<Layout>)"
+        v-for="item in (options.tree.children as Array<Layout>)"
         :key="item.id"
-        :template="item"
-        :actions="actions"
+        :options="{ tree: item, actions: options.actions }"
       >
         <template #tab="data">
           <slot name="tab" v-bind="(data as Tab)"></slot>

@@ -14,6 +14,7 @@ import {
   useAddTab,
   getParentsHierarchy,
   findUiByPath,
+  findLayout,
 } from "../useLayout";
 
 describe("useLayout", () => {
@@ -290,6 +291,69 @@ describe("useLayout", () => {
       const tab = findTab("55", layout) as Tab;
 
       expect(tab).toBe(undefined);
+    });
+  });
+
+  describe("findLayout", () => {
+    const layout = transformLayoutTemplate(
+      createLayout({
+        children: [
+          createLayout({
+            children: [
+              createTab({ title: "Hello 1", data: { n: 1 } }),
+              createTab({ title: "Hello 2", data: { n: 2 } }),
+              createTab({ title: "Hello 3", data: { n: 3 } }),
+            ],
+          }),
+          createLayout({
+            children: [
+              createLayout({
+                children: [createTab({ title: "Hello 2", data: { n: 2 } })],
+              }),
+              createLayout({
+                children: [
+                  createTab({ title: "Hello 3", data: { n: 3 } }),
+                  createTab({ title: "Hello 4", data: { n: 4 } }),
+                ],
+              }),
+            ],
+          }),
+          createLayout({
+            children: [
+              createTab({ title: "Hello 5", data: { n: 5 } }),
+              createTab({ title: "Hello 6", data: { n: 6 } }),
+              createTab({ title: "Hello 7", data: { n: 7 } }),
+              createTab({ title: "Hello 8", data: { n: 8 } }),
+            ],
+          }),
+        ],
+      })
+    ) as unknown as Layout<Layout>;
+
+    it("should return undefined", () => {
+      const id = "undef";
+
+      const res = findLayout(id, layout);
+
+      expect(res).toBeUndefined();
+    });
+
+    it("should find tab", () => {
+      const id = layout.children[2].id;
+
+      const res = findLayout(id, layout);
+
+      expect(res).toBeDefined();
+      expect(res?.children.length).toBe(4);
+    });
+
+    it("should find nested tab", () => {
+      const id = layout.children[1].children[1].id;
+
+      const res = findLayout(id, layout);
+
+      expect(res).toBeDefined();
+      expect(res?.children.length).toBe(2);
     });
   });
 

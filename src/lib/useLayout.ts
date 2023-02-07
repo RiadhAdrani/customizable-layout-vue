@@ -12,6 +12,8 @@ import {
   LayoutActions,
   Side,
   DraggedTab,
+  UseLayoutOptions,
+  UseLayoutOutput,
 } from "./types";
 import { v4 as useId } from "uuid";
 
@@ -112,6 +114,28 @@ export const findTab = (id: string, layout: Layout<Tab | Layout>): Tab | undefin
   }
 
   return undefined;
+};
+
+export const findLayout = <T = Tab>(id: string, root: Layout<Layout>): Layout<T> | undefined => {
+  const type = getType(root.children);
+
+  if (type === UIType.Tab) {
+    return undefined;
+  } else if (type === UIType.Layout) {
+    const maybe = root.children.find((child) => child.id === id);
+
+    if (maybe) {
+      return maybe as Layout<T>;
+    }
+
+    for (let child of root.children) {
+      const maybe = findLayout(id, child as unknown as Layout<Layout>);
+
+      if (maybe) {
+        return maybe as Layout<T>;
+      }
+    }
+  }
 };
 
 export const getRoot = (layout: Layout<Tab | Layout>): Layout<Tab | Layout> => {
@@ -248,7 +272,12 @@ export const useAddTab = (tab: TabTemplate, layout: Layout, position = Infinity)
   layout.children = [...layout.children.slice(0, pos), $tab, ...layout.children.slice(pos)];
 };
 
-export const useOnDrop = (data: Record<string, unknown>, layout: Layout, side: Side) => {
+export const useOnDrop = (
+  data: Record<string, unknown>,
+  layout: Layout,
+  side: Side,
+  factory: (data: Record<string, unknown>) => TabTemplate | undefined
+) => {
   let tab: TabTemplate | undefined = undefined;
   let dragged: Tab | undefined = undefined;
 
@@ -308,7 +337,9 @@ export const useOnDrop = (data: Record<string, unknown>, layout: Layout, side: S
     dragged = $tab;
     tab = createTab($data);
   } else {
-    // TODO : allow user to create tab with drag event
+    const $tab = factory(data);
+
+    tab ??= $tab;
   }
 
   if (tab) {
@@ -338,18 +369,51 @@ export const useOnDrop = (data: Record<string, unknown>, layout: Layout, side: S
 
   if (dragged) {
     const tab = findTab(dragged.id, getRoot(dragged.parent)) as Tab;
+
     useCloseTab(tab.id, tab.parent);
   }
 };
 
-export default (layout: LayoutTemplate) => {
+export default (layout: LayoutTemplate, options: UseLayoutOptions): UseLayoutOutput => {
   const tree = reactive(transformLayoutTemplate(layout));
 
   const actions: LayoutActions = {
-    useToggleTab,
-    useCloseTab,
-    useAddTab,
-    useOnDrop,
+    addTab(tab, id, position) {
+      const layout = findLayout(id, tree as unknown as Layout<Layout>);
+
+      if (!layout) {
+        throw `Not found: Layout with id "${id}" was not found.`;
+      }
+
+      useAddTab(tab, layout, position);
+    },
+    closeTab(id) {
+      const tab = findTab(id, tree);
+
+      if (!tab) {
+        throw `Not found: Tab with id "${id}" was not found.`;
+      }
+
+      useCloseTab(id, tab.parent);
+    },
+    toggleTab(id) {
+      const tab = findTab(id, tree);
+
+      if (!tab) {
+        throw `Not found: Tab with id "${id}" was not found.`;
+      }
+
+      useToggleTab(id, tab.parent);
+    },
+    onDrop(data, id, side) {
+      const layout = findLayout(id, tree as unknown as Layout<Layout>);
+
+      if (!layout) {
+        throw `Not found: Layout with id "${id}" was not found.`;
+      }
+
+      useOnDrop(data, layout, side, options.createTab);
+    },
   };
 
   return { tree, actions };

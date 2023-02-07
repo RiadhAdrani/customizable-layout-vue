@@ -1,6 +1,5 @@
 <script lang="ts" setup>
 import { Tab, DraggedTab, UIType } from "./types";
-import { getParentsHierarchy } from "./useLayout";
 
 const { item } = defineProps<{ item: Tab; activeId: string }>();
 

@@ -49,17 +49,22 @@ export interface Layout<T = Tab> extends BaseUI {
 }
 
 export interface LayoutActions {
-  useToggleTab: (id: string, layout: Layout) => void;
-  useCloseTab: (id: string, layout: Layout) => void;
-  useAddTab: (tab: TabTemplate, layout: Layout, position?: number) => void;
-  useOnDrop: (data: Record<string, unknown>, layout: Layout, side: Side) => void;
-}
-
-export interface LayoutEvents {
-  onTabButtonClicked: (id: string, parent: string) => void;
+  toggleTab: (id: string) => void;
+  closeTab: (id: string) => void;
+  addTab: (tab: TabTemplate, LayoutId: string, position?: number) => void;
+  onDrop: (data: Record<string, unknown>, layoutId: string, side: Side) => void;
 }
 
 export interface DraggedTab extends TabTemplate<Record<string, unknown>> {
   id: string;
   signature: "__dragged__tab__";
+}
+
+export interface UseLayoutOptions {
+  createTab: (data: Record<string, unknown>) => TabTemplate | undefined;
+}
+
+export interface UseLayoutOutput {
+  tree: Layout<Layout | Tab>;
+  actions: LayoutActions;
 }

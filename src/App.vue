@@ -1,22 +1,22 @@
 <script setup lang="ts">
-import { Direction, Tab } from "./lib/types";
+import { Direction } from "./lib/types";
 import useLayout, { createLayout, createTab } from "./lib/useLayout";
 import VLayout from "./lib/VLayout.vue";
 
-const { tree, actions } = useLayout(
+const options = useLayout(
   createLayout({
     direction: Direction.Column,
     children: [
       createLayout({
-        children: [createTab({ title: "Tab 1" }), createTab({ title: "Tab 2" })],
+        children: [createTab({ title: "Tab 1" })],
       }),
       createLayout({
         children: [
           createLayout({
-            children: [createTab({ title: "Tab 3" }), createTab({ title: "Tab 4" })],
+            children: [createTab({ title: "Tab 3" })],
           }),
           createLayout({
-            children: [createTab({ title: "Tab 5" }), createTab({ title: "Tab 6" })],
+            children: [createTab({ title: "Tab 5" })],
           }),
         ],
       }),
@@ -24,12 +24,17 @@ const { tree, actions } = useLayout(
         children: [createTab({ title: "Tab 7" })],
       }),
     ],
-  })
+  }),
+  {
+    createTab(data) {
+      return undefined;
+    },
+  }
 );
 </script>
 
 <template>
-  <VLayout :template="tree" :actions="actions">
+  <VLayout :options="options">
     <template #tab="props">
       <div>
         {{ props.title }} => Lorem ipsum dolor sit amet, consectetur adipisicing elit. Perspiciatis
