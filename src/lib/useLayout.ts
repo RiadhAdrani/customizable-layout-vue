@@ -412,7 +412,7 @@ export default (layout: LayoutTemplate, options: UseLayoutOptions): UseLayoutOut
         throw `Not found: Layout with id "${id}" was not found.`;
       }
 
-      useOnDrop(data, layout, side, options.createTab);
+      useOnDrop(data, layout, side, options.onUnknownDropped);
     },
   };
 

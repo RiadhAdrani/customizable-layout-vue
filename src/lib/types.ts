@@ -61,7 +61,7 @@ export interface DraggedTab extends TabTemplate<Record<string, unknown>> {
 }
 
 export interface UseLayoutOptions {
-  createTab: (data: Record<string, unknown>) => TabTemplate | undefined;
+  onUnknownDropped: (data: Record<string, unknown>) => TabTemplate | undefined;
 }
 
 export interface UseLayoutOutput {

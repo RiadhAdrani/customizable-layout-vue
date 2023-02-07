@@ -26,8 +26,8 @@ const options = useLayout(
     ],
   }),
   {
-    createTab(data) {
-      return undefined;
+    onUnknownDropped(data) {
+      return createTab({ title: "Data", data });
     },
   }
 );
