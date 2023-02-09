@@ -292,6 +292,8 @@ export const useAddTab = (
 
   layout.children = [...layout.children.slice(0, pos), $tab, ...layout.children.slice(pos)];
 
+  layout.active = $tab.id;
+
   return true;
 };
 
