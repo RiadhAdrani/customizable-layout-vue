@@ -375,6 +375,12 @@ export const useOnDrop = (
 
     tab = createTab({ title: $tab.title, data: $tab.data });
   } else {
+    // const created = factory(data as Record<string, unknown>);
+
+    // if (created) {
+    //   tab = created;
+    // }
+
     tab ??= factory(data as Record<string, unknown>);
   }
 
