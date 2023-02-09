@@ -58,6 +58,7 @@ export interface LayoutActions {
     side: Side,
     isSame?: (t1: any, t2: any) => boolean
   ) => void;
+  onEmptyDrop: (data: Record<string, unknown>) => void;
 }
 
 export type DraggedSignature = "__dragged__tab__";

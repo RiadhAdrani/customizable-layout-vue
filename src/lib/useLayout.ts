@@ -455,6 +455,17 @@ export default <T = Record<string, unknown>>(
 
       useOnDrop(data, layout, side, areSame, options.onUnknownDropped);
     },
+    onEmptyDrop(data) {
+      if (tree.children.length !== 0) {
+        throw `Forbidden: Root layout is not empty.`;
+      }
+
+      const tab = options.onUnknownDropped(data);
+
+      if (tab) {
+        useAddTab(tab, tree, () => false);
+      }
+    },
   };
 
   return { options: { tree, actions } };

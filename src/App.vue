@@ -6,7 +6,10 @@ import VLayout from "./lib/VLayout.vue";
 const { options } = useLayout(
   createLayout({
     direction: Direction.Column,
-    children: [createTab({ title: "Hello" }), createTab({ title: "2" })],
+    children: [
+      createTab({ title: "Hello", data: { id: "Hello World" } }),
+      createTab({ title: "2" }),
+    ],
   }),
   {
     onUnknownDropped(data: Record<string, unknown>) {
@@ -20,11 +23,15 @@ const { options } = useLayout(
 </script>
 
 <template>
+  <button draggable="true">drag me</button>
   <VLayout :options="options">
     <template #tab="props">
       <div>
-        <h3>{{ props.id }}</h3>
+        <h3>{{ props.data }}</h3>
       </div>
+    </template>
+    <template #empty>
+      <h1>Drag something here :)</h1>
     </template>
   </VLayout>
 </template>

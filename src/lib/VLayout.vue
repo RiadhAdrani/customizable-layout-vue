@@ -38,7 +38,7 @@ const close = (id: string) => {
   options.actions.closeTab(id);
 };
 
-const dropped = ({ side, ev }: { ev: DragEvent; side: Side }) => {
+const drop = ({ side, ev }: { ev: DragEvent; side: Side }) => {
   let data: Record<string, unknown> = {};
 
   try {
@@ -47,12 +47,26 @@ const dropped = ({ side, ev }: { ev: DragEvent; side: Side }) => {
 
   options.actions.onDrop(data, options.tree.id, side);
 };
+
+const emptyDrop = (ev: DragEvent) => {
+  ev.preventDefault();
+
+  let data: Record<string, unknown> = {};
+
+  try {
+    data = JSON.parse(ev.dataTransfer?.getData("text") ?? "{}");
+  } catch (error) {}
+
+  options.actions.onEmptyDrop(data);
+};
 </script>
 
 <template>
   <div class="clv__layout-wrapper">
     <!-- TODO allow dropping of tabs here  -->
-    <div v-if="isEmpty">Try dropping something here...</div>
+    <div v-if="isEmpty" class="clv__layout-empty" @dragover.prevent @drop="emptyDrop">
+      <slot name="empty">Nothing here</slot>
+    </div>
     <div v-else-if="!forLayouts" class="clv__tabs-container">
       <div class="clv__tabs-container-bar">
         <!-- TODO allow dropping of tabs here  -->
@@ -65,7 +79,7 @@ const dropped = ({ side, ev }: { ev: DragEvent; side: Side }) => {
           @close-tab="close(item.id)"
         />
       </div>
-      <VTabContent @on-drop="dropped">
+      <VTabContent @on-drop="drop">
         <slot
           name="tab"
           v-bind="getTab(options.tree.active!,(options.tree.children as Array<Tab>))"
