@@ -124,9 +124,15 @@ export const findTab = (id: string, layout: Layout<Tab | Layout>): Tab | undefin
 export const findLayout = <T = Tab>(id: string, root: Layout<Layout>): Layout<T> | undefined => {
   const type = getType(root.children);
 
-  if (type === UIType.Tab) {
-    return undefined;
-  } else if (type === UIType.Layout) {
+  if (root.id === id) {
+    return root as Layout<T>;
+  }
+
+  // if (type === UIType.Tab) {
+  //   return undefined;
+  // }
+
+  if (type === UIType.Layout) {
     const maybe = root.children.find((child) => child.id === id);
 
     if (maybe) {

@@ -335,6 +335,12 @@ describe("useLayout", () => {
       })
     ) as unknown as Layout<Layout>;
 
+    it("should return root (self)", () => {
+      const res = findLayout(layout.id, layout);
+
+      expect((res as any) === layout).toBe(true);
+    });
+
     it("should return undefined", () => {
       const id = "undef";
 

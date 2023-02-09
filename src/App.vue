@@ -6,14 +6,7 @@ import VLayout from "./lib/VLayout.vue";
 const { options } = useLayout(
   createLayout({
     direction: Direction.Column,
-    children: [
-      createLayout({
-        children: [createTab({ title: "Hello" })],
-      }),
-      createLayout({
-        children: [createTab({ title: "2" })],
-      }),
-    ],
+    children: [createTab({ title: "Hello" }), createTab({ title: "2" })],
   }),
   {
     onUnknownDropped(data: Record<string, unknown>) {
