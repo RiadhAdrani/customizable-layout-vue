@@ -11,7 +11,7 @@ const { options } = useLayout(
         children: [createTab({ title: "Hello" })],
       }),
       createLayout({
-        children: [createTab({ title: "2" }), createTab({ title: "3" })],
+        children: [createTab({ title: "2" })],
       }),
     ],
   }),

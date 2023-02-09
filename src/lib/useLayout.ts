@@ -322,7 +322,7 @@ export const useOnDrop = (
       const oldLayout: Layout = {
         children: layout.children,
         direction: layout.direction,
-        id: layout.id,
+        id: useId(),
         type: layout.type,
         active: layout.active,
         parent: layout as unknown as Layout<Layout>,
@@ -337,7 +337,6 @@ export const useOnDrop = (
 
       const $children = [newLayout, oldLayout] as unknown as Array<Tab>;
 
-      layout.id = useId();
       layout.active = undefined;
       layout.direction = direction;
       layout.children = before ? $children : $children.reverse();
