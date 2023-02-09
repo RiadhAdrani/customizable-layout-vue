@@ -35,7 +35,11 @@ describe("useLayout", () => {
 
   describe("createLayout", () => {
     it("should create a layout template with minimal options", () => {
-      expect(createLayout({ children: [] })).toStrictEqual({ children: [], type: UIType.Layout });
+      expect(createLayout({ children: [] })).toStrictEqual({
+        children: [],
+        type: UIType.Layout,
+        direction: undefined,
+      });
     });
 
     it("should create a layout template with minimal options", () => {
@@ -748,7 +752,7 @@ describe("useLayout", () => {
         })
       );
 
-      useAddTab(createTab({ title: "5", data: { id: 5 } }), layout, 1);
+      useAddTab(createTab({ title: "5", data: { id: 5 } }), layout, () => false, 1);
 
       expect(layout.children.length).toBe(4);
       expect(layout.children[0].title).toBe("1");
@@ -756,6 +760,25 @@ describe("useLayout", () => {
       expect(layout.children[1].data).toStrictEqual({ id: 5 });
       expect(layout.children[2].title).toBe("2");
       expect(layout.children[3].title).toBe("3");
+    });
+
+    it("should not add tab", () => {
+      const layout = transformLayoutTemplate(
+        createLayout({
+          children: [
+            createTab({ title: "1" }),
+            createTab({ title: "2" }),
+            createTab({ title: "3" }),
+          ],
+        })
+      );
+
+      useAddTab(createTab({ title: "5", data: { id: 5 } }), layout, () => true, 1);
+
+      expect(layout.children.length).toBe(3);
+      expect(layout.children[0].title).toBe("1");
+      expect(layout.children[1].title).toBe("2");
+      expect(layout.children[2].title).toBe("3");
     });
   });
 
@@ -765,9 +788,15 @@ describe("useLayout", () => {
         createLayout({ children: [createTab({ title: "1", data: { id: 1 } })] })
       );
 
-      useOnDrop({ id: 2 }, layout, Side.Center, (data) => {
-        return createTab({ title: "2", data });
-      });
+      useOnDrop(
+        { id: 2 },
+        layout,
+        Side.Center,
+        () => false,
+        (data) => {
+          return createTab({ title: "2", data });
+        }
+      );
 
       expect(layout.children.length).toBe(2);
       expect(layout.children[0].data).toStrictEqual({ id: 1 });
@@ -802,7 +831,13 @@ describe("useLayout", () => {
         id: parent.children[1].children[0].id,
       };
 
-      useOnDrop(data, layout, Side.Center, () => undefined);
+      useOnDrop(
+        data,
+        layout,
+        Side.Center,
+        () => false,
+        () => undefined
+      );
 
       expect(layout.children.length).toBe(3);
       expect(layout.children[0].data).toStrictEqual({ id: 1 });
@@ -829,9 +864,15 @@ describe("useLayout", () => {
           createLayout({ children: [createTab({ title: "1", data: { id: 1 } })] })
         );
 
-        useOnDrop({ id: 2 }, layout, side, (data) => {
-          return createTab({ title: "2", data });
-        });
+        useOnDrop(
+          { id: 2 },
+          layout,
+          side,
+          () => false,
+          (data) => {
+            return createTab({ title: "2", data });
+          }
+        );
 
         expect(layout.children.length).toBe(2);
         expect(getType(layout.children)).toBe(UIType.Layout);
@@ -853,6 +894,24 @@ describe("useLayout", () => {
         expect(old.children[0].parent === old).toBe(true);
       }
     );
+
+    it("should not add tab to the center", () => {
+      const layout = transformLayoutTemplate(
+        createLayout({ children: [createTab({ title: "1", data: { id: 1 } })] })
+      );
+
+      useOnDrop(
+        { id: 2 },
+        layout,
+        Side.Center,
+        () => true,
+        (data) => {
+          return createTab({ title: "2", data });
+        }
+      );
+
+      expect(layout.children.length).toBe(1);
+    });
 
     describe("Parent with same direction as drop", () => {
       let parent: Layout<Layout>;
@@ -881,9 +940,15 @@ describe("useLayout", () => {
 
           const layout = parent.children[1];
 
-          useOnDrop({ id: "test" }, layout, side, (data) => {
-            return createTab({ title: "test", data });
-          });
+          useOnDrop(
+            { id: "test" },
+            layout,
+            side,
+            () => false,
+            (data) => {
+              return createTab({ title: "test", data });
+            }
+          );
 
           expect(parent.children.length).toBe(4);
 
@@ -938,9 +1003,15 @@ describe("useLayout", () => {
         parent.direction = direction;
         const layout = parent.children[0];
 
-        useOnDrop({ id: "test" }, layout, side, (data) => {
-          return createTab({ title: "test", data });
-        });
+        useOnDrop(
+          { id: "test" },
+          layout,
+          side,
+          () => false,
+          (data) => {
+            return createTab({ title: "test", data });
+          }
+        );
 
         expect(parent.children.length).toBe(3);
 
@@ -978,6 +1049,118 @@ describe("useLayout", () => {
         expect(l3.children[0].data).toStrictEqual({ id: 3 });
         expect(l3.children[0].title).toBe("3");
       });
+    });
+
+    it("should move tab from Layout<Tab> to the [Right] of same level Layout<Tab>", () => {
+      const parent = transformLayoutTemplate(
+        createLayout({
+          direction: Direction.Column,
+          children: [
+            createLayout({
+              children: [createTab({ title: "1", data: { id: 1 } })],
+            }),
+            createLayout({
+              children: [createTab({ title: "2", data: { id: 2 } })],
+            }),
+          ],
+        })
+      ) as unknown as Layout<Layout>;
+
+      const layout = parent.children[0];
+
+      const id = parent.children[1].children[0].id;
+
+      const dragData: DraggedTab = {
+        id,
+        signature: "__dragged__tab__",
+        type: UIType.Tab,
+        data: parent.children[1].children[0].data,
+      };
+
+      useOnDrop(
+        dragData,
+        layout,
+        Side.Right,
+        () => false,
+        () => undefined
+      );
+
+      expect(parent.direction).toBe(Direction.Row);
+      expect(parent.type).toBe(UIType.Layout);
+
+      expect(parent.children.length).toBe(2);
+
+      const c1 = parent.children[0];
+      expect(c1.parent === parent).toBe(true);
+      expect(c1.children.length).toBe(1);
+      expect(c1.children[0].title).toBe("1");
+      expect(c1.children[0].data).toStrictEqual({ id: 1 });
+
+      const c2 = parent.children[1];
+      expect(c2.parent === parent).toBe(true);
+      expect(c2.children.length).toBe(1);
+      expect(c2.children[0].title).toBe("2");
+      expect(c2.children[0].data).toStrictEqual({ id: 2 });
+    });
+
+    it("should move tab from Layout<Tab> to the [Right] of same level Layout<Tab>", () => {
+      const parent = transformLayoutTemplate(
+        createLayout({
+          direction: Direction.Column,
+          children: [
+            createLayout({
+              children: [createTab({ title: "1", data: { id: 1 } })],
+            }),
+            createLayout({
+              children: [createTab({ title: "2", data: { id: 2 } })],
+            }),
+            createLayout({
+              children: [createTab({ title: "3", data: { id: 3 } })],
+            }),
+          ],
+        })
+      ) as unknown as Layout<Layout>;
+
+      const layout = parent.children[0];
+
+      const id = parent.children[1].children[0].id;
+
+      const dragData: DraggedTab = {
+        id,
+        signature: "__dragged__tab__",
+        type: UIType.Tab,
+        data: parent.children[1].children[0].data,
+      };
+
+      useOnDrop(
+        dragData,
+        layout,
+        Side.Right,
+        () => false,
+        () => undefined
+      );
+
+      expect(parent.direction).toBe(Direction.Column);
+      expect(parent.type).toBe(UIType.Layout);
+
+      expect(parent.children.length).toBe(2);
+
+      const c1 = parent.children[0] as unknown as Layout<Layout>;
+      expect(c1.parent === parent).toBe(true);
+      expect(getType(c1.children)).toBe(UIType.Layout);
+      expect(c1.children.length).toBe(2);
+      expect(c1.active).toBeUndefined;
+      expect(c1.children[0].children[0].title).toBe("1");
+      expect(c1.children[0].children[0].data).toStrictEqual({ id: 1 });
+      expect(c1.children[1].children[0].title).toBe("2");
+      expect(c1.children[1].children[0].data).toStrictEqual({ id: 2 });
+
+      const c2 = parent.children[1];
+      expect(c2.parent === parent).toBe(true);
+      expect(c2.children.length).toBe(1);
+      expect(c2.type).toBe(UIType.Layout);
+      expect(c2.children[0].title).toBe("3");
+      expect(c2.children[0].data).toStrictEqual({ id: 3 });
     });
   });
 });

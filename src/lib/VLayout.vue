@@ -1,13 +1,17 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { Layout, Tab, UIType, Direction, Side, UseLayoutOutput } from "./types";
-import { getType, getTab, useOnDrop, useCloseTab, useToggleTab } from "./useLayout";
+import { getType, getTab } from "./useLayout";
 import VTabButton from "./VTabButton.vue";
 import VTabContent from "./VTabContent.vue";
 
 const { options } = defineProps<{
   options: UseLayoutOutput;
 }>();
+
+if ((options.tree.type as any) === UIType.Tab) {
+  console.log(options.tree);
+}
 
 const forLayouts = computed(() => getType(options.tree.children) === UIType.Layout);
 
@@ -23,7 +27,7 @@ const classList = computed(() => {
     list.push("clv__layout-container-col");
   }
 
-  return list.toString();
+  return list.join(" ");
 });
 
 const toggle = (id: string) => {
@@ -68,7 +72,7 @@ const dropped = ({ side, ev }: { ev: DragEvent; side: Side }) => {
         ></slot>
       </VTabContent>
     </div>
-    <div v-else class="clv__layouts-container" :class="classList">
+    <div v-else-if="forLayouts" class="clv__layouts-container" :class="classList">
       <VLayout
         v-for="item in (options.tree.children as Array<Layout>)"
         :key="item.id"

@@ -13,7 +13,6 @@ import {
   Side,
   DraggedTab,
   UseLayoutOptions,
-  UseLayoutOutput,
 } from "./types";
 import { v4 as useId } from "uuid";
 
@@ -22,13 +21,18 @@ export const createTab = (params: CreateTabTemplate): TabTemplate => ({
   type: UIType.Tab,
 });
 
-export const createLayout = (params: CreateLayoutTemplate): LayoutTemplate => ({
-  ...params,
+export const createLayout = ({ children, direction }: CreateLayoutTemplate): LayoutTemplate => ({
+  children,
+  direction,
   type: UIType.Layout,
 });
 
-export const transformTabTemplate = (params: TabTemplate, parent: Layout): Tab => {
-  return { ...params, parent, id: useId() };
+export const transformTabTemplate = ({ title, data, type }: TabTemplate, parent: Layout): Tab => {
+  if (type !== UIType.Tab) {
+    throw "Bad Template (transformTabTemplate)";
+  }
+
+  return { title, data, type, parent, id: useId() };
 };
 
 export const transformLayoutTemplate = (
@@ -36,7 +40,8 @@ export const transformLayoutTemplate = (
   parent?: Layout<Layout>
 ): Layout => {
   const layout: Layout = {
-    ...template,
+    type: UIType.Layout,
+    active: undefined,
     children: [],
     parent,
     id: useId(),
@@ -206,25 +211,22 @@ export const useCloseTab = (id: string, layout: Layout): void => {
     throw `Unexpected State (useCloseTab: Tab with id "${id}" does not exist.`;
   }
 
-  const newChildren = layout.children.filter((item) => item.id !== id);
+  layout.children = layout.children.filter((item) => item.id !== id);
 
-  layout.children = newChildren;
-
-  if (newChildren.length === 0) {
+  if (layout.children.length === 0) {
     if (layout.parent) {
-      const newParentChildren = layout.parent.children.filter(
-        (child) => child.id !== layout.id
-      ) as unknown as Array<Layout>;
+      layout.parent.children = layout.parent.children.filter((child) => child.id !== layout.id);
 
-      if (newParentChildren.length === 1) {
-        layout.parent.children = newParentChildren[0].children as unknown as Array<Layout>;
-        layout.parent.children.forEach((item) => (item.parent = layout.parent));
-        layout.parent.direction = Direction.Row;
+      if (layout.parent.children.length === 1) {
+        const single = layout.parent.children[0];
 
-        // TODO : get correct active one
-        layout.parent.active = newParentChildren[0].active;
+        (layout.parent as unknown as Layout).children = single.children;
+        (layout.parent as unknown as Layout).children.forEach(
+          (child) => (child.parent = layout.parent as unknown as Layout)
+        );
+        (layout.parent as unknown as Layout).direction = single.direction;
+        (layout.parent as unknown as Layout).active = single.active;
       } else {
-        layout.parent.children = newParentChildren as unknown as Array<Layout>;
       }
     }
   } else {
@@ -260,9 +262,22 @@ export const calculateSide = (e: DragEvent): Side => {
   return Side.Center;
 };
 
-export const useAddTab = (tab: TabTemplate, layout: Layout, position = Infinity) => {
+export const useAddTab = (
+  tab: TabTemplate,
+  layout: Layout,
+  areSame?: (t1: any, t2: any) => boolean,
+  position = Infinity
+): boolean => {
   if (getType(layout.children) === UIType.Layout) {
     throw `Unexpected State: cannot add Tab to Layouts.`;
+  }
+
+  if (areSame) {
+    for (let child of layout.children) {
+      if (areSame(child.data, tab.data)) {
+        return false;
+      }
+    }
   }
 
   const $tab = transformTabTemplate(tab, layout);
@@ -270,16 +285,20 @@ export const useAddTab = (tab: TabTemplate, layout: Layout, position = Infinity)
   const pos = clamp(0, position, layout.children.length);
 
   layout.children = [...layout.children.slice(0, pos), $tab, ...layout.children.slice(pos)];
+
+  return true;
 };
 
 export const useOnDrop = (
   data: Record<string, unknown> | DraggedTab,
   layout: Layout,
   side: Side,
+  areSame: (t1: any, t2: any) => boolean,
   factory: (data: Record<string, unknown>) => TabTemplate | undefined
 ) => {
   let tab: TabTemplate | undefined = undefined;
-  let dragged: boolean = false;
+  let shouldBeRemoved: boolean = false;
+  let isDragged: boolean = false;
 
   const addAtSide = (direction: Direction, before: boolean) => {
     if (!tab) {
@@ -300,9 +319,15 @@ export const useOnDrop = (
         ...layout.parent.children.slice(index),
       ];
     } else if (!layout.parent || (layout.parent && layout.parent.direction !== direction)) {
-      const oldLayout = { ...layout };
+      const oldLayout: Layout = {
+        children: layout.children,
+        direction: layout.direction,
+        id: layout.id,
+        type: layout.type,
+        active: layout.active,
+        parent: layout as unknown as Layout<Layout>,
+      };
 
-      oldLayout.parent = layout as unknown as Layout<Layout>;
       oldLayout.children.forEach((child) => (child.parent = oldLayout));
 
       const newLayout = transformLayoutTemplate(
@@ -312,6 +337,7 @@ export const useOnDrop = (
 
       const $children = [newLayout, oldLayout] as unknown as Array<Tab>;
 
+      layout.id = useId();
       layout.active = undefined;
       layout.direction = direction;
       layout.children = before ? $children : $children.reverse();
@@ -325,21 +351,20 @@ export const useOnDrop = (
     data.signature === "__dragged__tab__" &&
     typeof data.id === "string"
   ) {
-    const $data = data as unknown as DraggedTab;
-
     const $exist = findTab(data.id, layout);
 
     if ($exist && layout.children.length === 1) {
       return;
     }
 
-    const $tab = findTab($data.id, getRoot(layout));
+    const $tab = findTab(data.id, getRoot(layout));
 
     if (!$tab) {
-      throw `Unexpected State (useOnDrop): dragged tab with id "${$data.id}" does not exist.`;
+      throw `Unexpected State (useOnDrop): dragged tab with id "${data.id}" does not exist.`;
     }
 
-    dragged = true;
+    shouldBeRemoved = true;
+    isDragged = true;
 
     tab = createTab({ title: $tab.title, data: $tab.data });
   } else {
@@ -349,7 +374,7 @@ export const useOnDrop = (
   if (tab) {
     switch (side) {
       case Side.Center: {
-        useAddTab(tab, layout);
+        shouldBeRemoved = useAddTab(tab, layout, areSame);
         break;
       }
       case Side.Top: {
@@ -371,54 +396,59 @@ export const useOnDrop = (
     }
   }
 
-  if (dragged) {
+  if (isDragged) {
     const tab = findTab((data as DraggedTab).id, getRoot(layout)) as Tab;
 
     useCloseTab(tab.id, tab.parent);
   }
 };
 
-export default (layout: LayoutTemplate, options: UseLayoutOptions): UseLayoutOutput => {
+export default <T = Record<string, unknown>>(
+  layout: LayoutTemplate,
+  options: UseLayoutOptions<T>
+) => {
   const tree = reactive(transformLayoutTemplate(layout));
+
+  const areSame = options.areSameTab || (() => false);
 
   const actions: LayoutActions = {
     addTab(tab, id, position) {
       const layout = findLayout(id, tree as unknown as Layout<Layout>);
 
       if (!layout) {
-        throw `Not found: Layout with id "${id}" was not found.`;
+        throw `Not found (addTab): Layout with id "${id}" was not found.`;
       }
 
-      useAddTab(tab, layout, position);
+      useAddTab(tab, layout, areSame, position);
     },
     closeTab(id) {
-      const tab = findTab(id, tree);
+      const tab = findTab(id, getRoot(tree));
 
       if (!tab) {
-        throw `Not found: Tab with id "${id}" was not found.`;
+        throw `Not found (closeTab): Tab with id "${id}" was not found.`;
       }
 
-      useCloseTab(id, tab.parent);
+      useCloseTab(id, tab!.parent);
     },
     toggleTab(id) {
-      const tab = findTab(id, tree);
+      const tab = findTab(id, getRoot(tree));
 
       if (!tab) {
-        throw `Not found: Tab with id "${id}" was not found.`;
+        throw `Not found (toggleTab): Tab with id  "${id}" was not found.`;
       }
 
       useToggleTab(id, tab.parent);
     },
     onDrop(data, id, side) {
-      const layout = findLayout(id, tree as unknown as Layout<Layout>);
+      const layout = findLayout(id, getRoot(tree) as unknown as Layout<Layout>);
 
       if (!layout) {
-        throw `Not found: Layout with id "${id}" was not found.`;
+        throw `Not found (onDrop): Layout with id "${id}" was not found.`;
       }
 
-      useOnDrop(data, layout, side, options.onUnknownDropped);
+      useOnDrop(data, layout, side, areSame, options.onUnknownDropped);
     },
   };
 
-  return { tree, actions };
+  return { options: { tree, actions } };
 };

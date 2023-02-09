@@ -17,7 +17,6 @@ const onDragStart = (e: DragEvent) => {
   const data: DraggedTab = {
     id: item.id,
     type: UIType.Tab,
-    title: item.title,
     data: item.data,
     signature: "__dragged__tab__",
   };

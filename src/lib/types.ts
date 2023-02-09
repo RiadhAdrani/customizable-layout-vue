@@ -52,7 +52,12 @@ export interface LayoutActions {
   toggleTab: (id: string) => void;
   closeTab: (id: string) => void;
   addTab: (tab: TabTemplate, LayoutId: string, position?: number) => void;
-  onDrop: (data: Record<string, unknown>, layoutId: string, side: Side) => void;
+  onDrop: (
+    data: Record<string, unknown>,
+    layoutId: string,
+    side: Side,
+    isSame?: (t1: any, t2: any) => boolean
+  ) => void;
 }
 
 export type DraggedSignature = "__dragged__tab__";
@@ -62,8 +67,9 @@ export interface DraggedTab extends Omit<TabTemplate<Record<string, unknown>>, "
   signature: DraggedSignature;
 }
 
-export interface UseLayoutOptions {
+export interface UseLayoutOptions<T> {
   onUnknownDropped: (data: Record<string, unknown>) => TabTemplate | undefined;
+  areSameTab?: (tab1Data: T, tab2Data: T) => boolean;
 }
 
 export interface UseLayoutOutput {

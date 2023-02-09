@@ -3,27 +3,24 @@ import { Direction } from "./lib/types";
 import useLayout, { createLayout, createTab } from "./lib/useLayout";
 import VLayout from "./lib/VLayout.vue";
 
-const options = useLayout(
+const { options } = useLayout(
   createLayout({
     direction: Direction.Column,
     children: [
       createLayout({
-        children: [
-          createTab({ title: "1", data: { id: 1 } }),
-          createTab({ title: "2", data: { id: 2 } }),
-        ],
+        children: [createTab({ title: "Hello" })],
       }),
       createLayout({
-        children: [
-          createTab({ title: "3", data: { id: 3 } }),
-          createTab({ title: "4", data: { id: 4 } }),
-        ],
+        children: [createTab({ title: "2" }), createTab({ title: "3" })],
       }),
     ],
   }),
   {
-    onUnknownDropped(data) {
+    onUnknownDropped(data: Record<string, unknown>) {
       return createTab({ title: "Data", data });
+    },
+    areSameTab() {
+      return false;
     },
   }
 );
@@ -33,9 +30,7 @@ const options = useLayout(
   <VLayout :options="options">
     <template #tab="props">
       <div>
-        {{ props.title }} => Lorem ipsum dolor sit amet, consectetur adipisicing elit. Perspiciatis
-        quis eveniet consequuntur vel! Ducimus, eligendi? Et laboriosam reiciendis magni quidem cum,
-        iste veritatis nam vero accusantium? Odit, facilis. Ipsam, at.
+        <h3>{{ props.id }}</h3>
       </div>
     </template>
   </VLayout>
