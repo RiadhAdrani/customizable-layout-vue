@@ -5,9 +5,10 @@ import { calculateSide } from "./useLayout";
 
 const t = 5;
 
-const { multi, disabled, overlayColor, sideColor } = defineProps({
+const { multi, disabled, overlayColor, sideColor, stopPropagation } = defineProps({
   multi: { type: Boolean, required: false, default: true },
   disabled: { type: Boolean, required: false, default: false },
+  stopPropagation: { type: Boolean, required: false, default: false },
   overlayColor: { type: String, required: false, default: defaultColors.contentOverlay },
   sideColor: { type: String, required: false, default: defaultColors.contentSide },
 });
@@ -25,6 +26,10 @@ const classes = computed(() =>
 const onDragOver = (ev: DragEvent) => {
   if (disabled) return;
 
+  if (stopPropagation) {
+    ev.stopPropagation();
+  }
+
   ev.preventDefault();
 
   const $side = multi ? calculateSide(ev) : Side.Center;
@@ -32,14 +37,22 @@ const onDragOver = (ev: DragEvent) => {
   setTimeout(() => (side.value = $side), t);
 };
 
-const onDragLeave = () => {
+const onDragLeave = (ev: DragEvent) => {
   if (disabled) return;
+
+  if (stopPropagation) {
+    ev.stopPropagation();
+  }
 
   setTimeout(() => (side.value = undefined), t);
 };
 
 const onDrop = (ev: DragEvent) => {
   if (disabled) return;
+
+  if (stopPropagation) {
+    ev.stopPropagation();
+  }
 
   setTimeout(() => (side.value = undefined), t);
 

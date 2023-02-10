@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed } from "vue";
-import { Tab, DraggedTab, UIType } from "./types";
+import { Tab, DraggedTab, UIType, TabButtonSlotProps } from "./types";
 import VDropZone from "./VDropZone.vue";
 
 const { item, activeId } = defineProps<{ item: Tab; activeId: string }>();
@@ -29,17 +29,16 @@ const onDragStart = (e: DragEvent) => {
 
 <template>
   <div class="clv__tab-btn" draggable="true" @dragstart.stop="onDragStart">
-    <VDropZone :multi="false">
+    <VDropZone :multi="false" :stop-propagation="true">
       <template #default>
         <slot
           name="default"
-          v-bind="{
+          v-bind="({
             active: activeId === item.id,
-            close,
-            toggle,
             title: item.title,
             data: item.data,
-          }"
+            close,
+            toggle,} as TabButtonSlotProps)"
         >
           <button class="clv__tab-btn-default" :data-active="activeId === item.id" @click="toggle">
             <span>{{ item.title }}</span>

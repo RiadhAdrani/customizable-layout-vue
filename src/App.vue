@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { Direction } from "./lib/types";
-import useLayout, { createLayout, createTab } from "./lib/useLayout";
-import VLayout from "./lib/VLayout.vue";
+import { VLayout, useLayout, createLayout, createTab } from "./lib";
 
 const { options } = useLayout(
   createLayout({
@@ -25,13 +24,13 @@ const { options } = useLayout(
 <template>
   <button draggable="true">drag me</button>
   <VLayout :options="options">
-    <template #tab="props">
-      <div class="hello">{{ props.data!.text }}</div>
+    <template #tab="tab">
+      <div class="hello">{{ tab.data!.text }}</div>
     </template>
     <template #empty>
       <h1>Drag something here :)</h1>
     </template>
-    <template #tab-btn="{ active, close, title, toggle, data }">
+    <template #tab-btn="{ active, title, toggle, close }">
       <button @click="toggle" @contextmenu.prevent="close">
         {{ title }} {{ active ? "✅" : "" }}
       </button>

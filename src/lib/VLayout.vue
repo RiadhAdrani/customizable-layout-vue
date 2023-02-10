@@ -45,6 +45,16 @@ const drop = ({ side, ev }: { ev: DragEvent; side: Side }) => {
   options.actions.onDrop(data, options.tree.id, side);
 };
 
+const navDrop = ({ ev }: { ev: DragEvent }) => {
+  let data: Record<string, unknown> = {};
+
+  try {
+    data = JSON.parse(ev.dataTransfer?.getData("text") ?? "{}");
+  } catch (error) {}
+
+  options.actions.onDrop(data, options.tree.id, Side.Center);
+};
+
 const emptyDrop = ({ ev }: { ev: DragEvent }) => {
   ev.preventDefault();
 
@@ -67,25 +77,28 @@ const emptyDrop = ({ ev }: { ev: DragEvent }) => {
     </div>
     <div v-else-if="!forLayouts" class="clv__tabs-container">
       <div class="clv__tabs-container-bar">
-        <!-- TODO allow dropping of tabs here  -->
-        <VTabButton
-          v-for="item of (options.tree.children as Array<Tab>)"
-          :active-id="options.tree.active!"
-          :item="item"
-          :key="item.id"
-          @toggle-tab="toggle(item.id)"
-          @close-tab="close(item.id)"
-        >
-          <template #default="props">
-            <slot name="tab-btn" v-bind="(props as TabButtonSlotProps)"> </slot>
-          </template>
-        </VTabButton>
+        <VDropZone :multi="false" @on-drop="navDrop">
+          <div class="clv__tabs-container-bar">
+            <VTabButton
+              v-for="item of (options.tree.children as Array<Tab>)"
+              :active-id="options.tree.active!"
+              :item="item"
+              :key="item.id"
+              @toggle-tab="toggle(item.id)"
+              @close-tab="close(item.id)"
+            >
+              <template #default="props">
+                <slot name="tab-btn" v-bind="props" />
+              </template>
+            </VTabButton>
+          </div>
+        </VDropZone>
       </div>
       <VTabContent @on-drop="drop" :colors="options.colors">
         <slot
           name="tab"
           v-bind="getTab(options.tree.active!,(options.tree.children as Array<Tab>))"
-        ></slot>
+        />
       </VTabContent>
     </div>
     <div v-else-if="forLayouts" class="clv__layouts-container" :class="classList">
@@ -95,10 +108,10 @@ const emptyDrop = ({ ev }: { ev: DragEvent }) => {
         :options="{ tree: item, actions: options.actions, colors: options.colors }"
       >
         <template #tab="data">
-          <slot name="tab" v-bind="(data as Tab)"></slot>
+          <slot name="tab" v-bind="(data as Tab)" />
         </template>
         <template #tab-btn="props">
-          <slot name="tab-btn" v-bind="(props as TabButtonSlotProps)"> </slot>
+          <slot name="tab-btn" v-bind="(props as TabButtonSlotProps)" />
         </template>
       </VLayout>
     </div>
