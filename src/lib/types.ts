@@ -71,9 +71,21 @@ export interface DraggedTab extends Omit<TabTemplate<Record<string, unknown>>, "
 export interface UseLayoutOptions<T> {
   onUnknownDropped: (data: Record<string, unknown>) => TabTemplate | undefined;
   areSameTab?: (tab1Data: T, tab2Data: T) => boolean;
+  colors?: LayoutColorOptions;
 }
+
+export interface LayoutColorOptions {
+  contentOverlay?: string;
+  contentSide?: string;
+}
+
+export const defaultColors: LayoutColorOptions = {
+  contentOverlay: "#0000ff11",
+  contentSide: "#000000aa",
+};
 
 export interface UseLayoutOutput {
   tree: Layout<Layout | Tab>;
   actions: LayoutActions;
+  colors: LayoutColorOptions;
 }

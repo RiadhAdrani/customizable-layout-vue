@@ -13,6 +13,8 @@ import {
   Side,
   DraggedTab,
   UseLayoutOptions,
+  LayoutColorOptions,
+  defaultColors,
 } from "./types";
 import { v4 as useId } from "uuid";
 
@@ -375,12 +377,6 @@ export const useOnDrop = (
 
     tab = createTab({ title: $tab.title, data: $tab.data });
   } else {
-    // const created = factory(data as Record<string, unknown>);
-
-    // if (created) {
-    //   tab = created;
-    // }
-
     tab ??= factory(data as Record<string, unknown>);
   }
 
@@ -416,7 +412,7 @@ export const useOnDrop = (
   }
 };
 
-export default <T = Record<string, unknown>>(
+export default <T extends Record<string, unknown> = Record<string, unknown>>(
   layout: LayoutTemplate,
   options: UseLayoutOptions<T>
 ) => {
@@ -474,5 +470,7 @@ export default <T = Record<string, unknown>>(
     },
   };
 
-  return { options: { tree, actions } };
+  const colors: LayoutColorOptions = { ...defaultColors, ...options.colors };
+
+  return { options: { tree, actions, colors } };
 };

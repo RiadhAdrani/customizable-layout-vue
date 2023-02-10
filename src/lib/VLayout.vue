@@ -79,7 +79,7 @@ const emptyDrop = (ev: DragEvent) => {
           @close-tab="close(item.id)"
         />
       </div>
-      <VTabContent @on-drop="drop">
+      <VTabContent @on-drop="drop" :colors="options.colors">
         <slot
           name="tab"
           v-bind="getTab(options.tree.active!,(options.tree.children as Array<Tab>))"
@@ -90,7 +90,7 @@ const emptyDrop = (ev: DragEvent) => {
       <VLayout
         v-for="item in (options.tree.children as Array<Layout>)"
         :key="item.id"
-        :options="{ tree: item, actions: options.actions }"
+        :options="{ tree: item, actions: options.actions, colors: options.colors }"
       >
         <template #tab="data">
           <slot name="tab" v-bind="(data as Tab)"></slot>

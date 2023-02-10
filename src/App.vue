@@ -7,16 +7,20 @@ const { options } = useLayout(
   createLayout({
     direction: Direction.Column,
     children: [
-      createTab({ title: "Hello", data: { id: "Hello World" } }),
-      createTab({ title: "2" }),
+      createTab({ title: "Hello", data: { text: "Hello, World" } }),
+      createTab({ title: "World", data: { text: "World, Hello" } }),
     ],
   }),
   {
-    onUnknownDropped(data: Record<string, unknown>) {
-      return createTab({ title: "Data", data });
+    onUnknownDropped() {
+      return createTab({ title: "Data", data: { text: "Custom Tab" } });
     },
     areSameTab() {
       return false;
+    },
+    colors: {
+      contentOverlay: "red",
+      contentSide: "blue",
     },
   }
 );
@@ -26,9 +30,7 @@ const { options } = useLayout(
   <button draggable="true">drag me</button>
   <VLayout :options="options">
     <template #tab="props">
-      <div>
-        <h3>{{ props.data }}</h3>
-      </div>
+      <div class="hello">{{ props.data!.text }}</div>
     </template>
     <template #empty>
       <h1>Drag something here :)</h1>
@@ -37,6 +39,11 @@ const { options } = useLayout(
 </template>
 
 <style scoped>
+.hello {
+  padding: 10px;
+  background: #1e1e1e;
+  flex: 1;
+}
 .logo {
   height: 6em;
   padding: 1.5em;
