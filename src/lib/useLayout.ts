@@ -210,6 +210,16 @@ export const findUiByPath = (
   return $item;
 };
 
+export const processDragData = (raw: any): Record<string, unknown> => {
+  let data = {};
+
+  try {
+    data = JSON.parse(raw ?? "{}");
+  } catch (error) {}
+
+  return data;
+};
+
 export const useCloseTab = (id: string, layout: Layout): void => {
   if (getType(layout.children) === UIType.Layout) {
     throw "Unexpected Function Call (useCloseTab): cannot close tabs in a Layout of layouts.";
@@ -300,14 +310,13 @@ export const useAddTab = (
 };
 
 export const useOnDrop = (
-  data: Record<string, unknown> | DraggedTab,
+  dragData: Record<string, unknown> | DraggedTab,
   layout: Layout,
   side: Side,
   areSame: (t1: any, t2: any) => boolean,
   factory: (data: Record<string, unknown>) => TabTemplate | undefined
 ) => {
   let tab: TabTemplate | undefined = undefined;
-  let shouldBeRemoved: boolean = false;
   let isDragged: boolean = false;
 
   const addAtSide = (direction: Direction, before: boolean) => {
@@ -356,34 +365,33 @@ export const useOnDrop = (
   };
 
   if (
-    data.type === UIType.Tab &&
-    data.signature === "__dragged__tab__" &&
-    typeof data.id === "string"
+    dragData.type === UIType.Tab &&
+    dragData.signature === "__dragged__tab__" &&
+    typeof dragData.id === "string"
   ) {
-    const $exist = findTab(data.id, layout);
+    const $exist = findTab(dragData.id, layout);
 
     if ($exist && layout.children.length === 1) {
       return;
     }
 
-    const $tab = findTab(data.id, getRoot(layout));
+    const $tab = findTab(dragData.id, getRoot(layout));
 
     if (!$tab) {
-      throw `Unexpected State (useOnDrop): dragged tab with id "${data.id}" does not exist.`;
+      throw `Unexpected State (useOnDrop): dragged tab with id "${dragData.id}" does not exist.`;
     }
 
-    shouldBeRemoved = true;
     isDragged = true;
 
     tab = createTab({ title: $tab.title, data: $tab.data });
   } else {
-    tab ??= factory(data as Record<string, unknown>);
+    tab ??= factory(dragData as Record<string, unknown>);
   }
 
   if (tab) {
     switch (side) {
       case Side.Center: {
-        shouldBeRemoved = useAddTab(tab, layout, areSame);
+        useAddTab(tab, layout, areSame);
         break;
       }
       case Side.Top: {
@@ -406,7 +414,7 @@ export const useOnDrop = (
   }
 
   if (isDragged) {
-    const tab = findTab((data as DraggedTab).id, getRoot(layout)) as Tab;
+    const tab = findTab((dragData as DraggedTab).id, getRoot(layout)) as Tab;
 
     useCloseTab(tab.id, tab.parent);
   }

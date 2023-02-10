@@ -1,5 +1,4 @@
 <script lang="ts" setup>
-import { computed } from "vue";
 import { Tab, DraggedTab, UIType, TabButtonSlotProps } from "./types";
 import VDropZone from "./VDropZone.vue";
 

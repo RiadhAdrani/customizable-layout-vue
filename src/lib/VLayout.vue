@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { Layout, Tab, UIType, Direction, Side, UseLayoutOutput, TabButtonSlotProps } from "./types";
-import { getType, getTab } from "./useLayout";
+import { getType, getTab, processDragData } from "./useLayout";
 import VDropZone from "./VDropZone.vue";
 import VTabButton from "./VTabButton.vue";
 import VTabContent from "./VTabContent.vue";
@@ -36,21 +36,13 @@ const close = (id: string) => {
 };
 
 const drop = ({ side, ev }: { ev: DragEvent; side: Side }) => {
-  let data: Record<string, unknown> = {};
-
-  try {
-    data = JSON.parse(ev.dataTransfer?.getData("text") ?? "{}");
-  } catch (error) {}
+  const data: Record<string, unknown> = processDragData(ev.dataTransfer?.getData("text"));
 
   options.actions.onDrop(data, options.tree.id, side);
 };
 
 const navDrop = ({ ev }: { ev: DragEvent }) => {
-  let data: Record<string, unknown> = {};
-
-  try {
-    data = JSON.parse(ev.dataTransfer?.getData("text") ?? "{}");
-  } catch (error) {}
+  const data: Record<string, unknown> = processDragData(ev.dataTransfer?.getData("text"));
 
   options.actions.onDrop(data, options.tree.id, Side.Center);
 };
@@ -58,11 +50,7 @@ const navDrop = ({ ev }: { ev: DragEvent }) => {
 const emptyDrop = ({ ev }: { ev: DragEvent }) => {
   ev.preventDefault();
 
-  let data: Record<string, unknown> = {};
-
-  try {
-    data = JSON.parse(ev.dataTransfer?.getData("text") ?? "{}");
-  } catch (error) {}
+  const data: Record<string, unknown> = processDragData(ev.dataTransfer?.getData("text"));
 
   options.actions.onEmptyDrop(data);
 };
