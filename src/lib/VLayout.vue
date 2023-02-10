@@ -1,17 +1,14 @@
 <script lang="ts" setup>
 import { computed } from "vue";
-import { Layout, Tab, UIType, Direction, Side, UseLayoutOutput } from "./types";
+import { Layout, Tab, UIType, Direction, Side, UseLayoutOutput, TabButtonSlotProps } from "./types";
 import { getType, getTab } from "./useLayout";
+import VDropZone from "./VDropZone.vue";
 import VTabButton from "./VTabButton.vue";
 import VTabContent from "./VTabContent.vue";
 
 const { options } = defineProps<{
   options: UseLayoutOutput;
 }>();
-
-if ((options.tree.type as any) === UIType.Tab) {
-  console.log(options.tree);
-}
 
 const forLayouts = computed(() => getType(options.tree.children) === UIType.Layout);
 
@@ -48,7 +45,7 @@ const drop = ({ side, ev }: { ev: DragEvent; side: Side }) => {
   options.actions.onDrop(data, options.tree.id, side);
 };
 
-const emptyDrop = (ev: DragEvent) => {
+const emptyDrop = ({ ev }: { ev: DragEvent }) => {
   ev.preventDefault();
 
   let data: Record<string, unknown> = {};
@@ -63,9 +60,10 @@ const emptyDrop = (ev: DragEvent) => {
 
 <template>
   <div class="clv__layout-wrapper">
-    <!-- TODO allow dropping of tabs here  -->
-    <div v-if="isEmpty" class="clv__layout-empty" @dragover.prevent @drop="emptyDrop">
-      <slot name="empty">Nothing here</slot>
+    <div v-if="isEmpty" class="clv__layout-empty">
+      <VDropZone @on-drop="emptyDrop" :multi="false">
+        <slot name="empty">Nothing here</slot>
+      </VDropZone>
     </div>
     <div v-else-if="!forLayouts" class="clv__tabs-container">
       <div class="clv__tabs-container-bar">
@@ -77,7 +75,11 @@ const emptyDrop = (ev: DragEvent) => {
           :key="item.id"
           @toggle-tab="toggle(item.id)"
           @close-tab="close(item.id)"
-        />
+        >
+          <template #default="props">
+            <slot name="tab-btn" v-bind="(props as TabButtonSlotProps)"> </slot>
+          </template>
+        </VTabButton>
       </div>
       <VTabContent @on-drop="drop" :colors="options.colors">
         <slot
@@ -94,6 +96,9 @@ const emptyDrop = (ev: DragEvent) => {
       >
         <template #tab="data">
           <slot name="tab" v-bind="(data as Tab)"></slot>
+        </template>
+        <template #tab-btn="props">
+          <slot name="tab-btn" v-bind="(props as TabButtonSlotProps)"> </slot>
         </template>
       </VLayout>
     </div>
@@ -117,31 +122,6 @@ const emptyDrop = (ev: DragEvent) => {
 .clv__tabs-container-bar {
   display: flex;
   flex-direction: row;
-}
-
-.clv__tab-btn {
-  border-bottom: 1px solid transparent;
-  border-radius: 5px 5px 0px 0px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.6em 0.8em;
-  background-color: #202020;
-}
-
-.clv__tab-btn-close {
-  margin-left: 10px;
-  font-size: 0.75em;
-  padding: 0.3em;
-}
-
-.clv__tab-btn-close:hover {
-  background-color: black;
-}
-
-.clv__tab-btn[data-active="true"] {
-  border-bottom-color: white;
-  background-color: #1a1a1a;
 }
 
 .clv__layouts-container {

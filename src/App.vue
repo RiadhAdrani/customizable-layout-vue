@@ -18,10 +18,6 @@ const { options } = useLayout(
     areSameTab() {
       return false;
     },
-    colors: {
-      contentOverlay: "red",
-      contentSide: "blue",
-    },
   }
 );
 </script>
@@ -34,6 +30,11 @@ const { options } = useLayout(
     </template>
     <template #empty>
       <h1>Drag something here :)</h1>
+    </template>
+    <template #tab-btn="{ active, close, title, toggle, data }">
+      <button @click="toggle" @contextmenu.prevent="close">
+        {{ title }} {{ active ? "✅" : "" }}
+      </button>
     </template>
   </VLayout>
 </template>

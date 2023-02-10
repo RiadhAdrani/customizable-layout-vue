@@ -1,3 +1,5 @@
+import { U } from "vitest/dist/types-aac763a5";
+
 export enum Direction {
   Row = "row",
   Column = "column",
@@ -88,4 +90,12 @@ export interface UseLayoutOutput {
   tree: Layout<Layout | Tab>;
   actions: LayoutActions;
   colors: LayoutColorOptions;
+}
+
+export interface TabButtonSlotProps<T = Record<string, unknown>> {
+  active: boolean;
+  close: () => void;
+  toggle: () => void;
+  title: string;
+  data?: T;
 }
