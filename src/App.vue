@@ -27,10 +27,10 @@ const onClick = () => {
 </script>
 
 <template>
-  <button draggable="true">drag me</button>
+  <!-- <button draggable="true">drag me</button>
   <br />
   <button @click="onClick">Start new Tab</button>
-  <br />
+  <br /> -->
   <VLayout :options="options">
     <template #tab="tab">
       <div class="hello">{{ tab.data!.text }}</div>

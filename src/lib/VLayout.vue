@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch, watchEffect } from "vue";
 import { Layout, Tab, UIType, Direction, Side, UseLayoutOutput, TabButtonSlotProps } from "./types";
 import { getType, getTab, processDragData } from "./useLayout";
 import VDropZone from "./VDropZone.vue";
@@ -72,19 +72,6 @@ const emptyDrop = ({ ev }: { ev: DragEvent }) => {
 
 const onMouseDown = () => {
   handling.value = true;
-
-  const pEl = document.getElementById(`clv__layout-id-${options.tree.parent!.id}`)!;
-
-  // we need to go through all element and set element width;
-  options.tree.parent!.children.forEach((child) => {
-    const childEl = document.getElementById(`clv__layout-id-${child.id}`)! as HTMLElement;
-
-    if (!childEl.style.width) {
-      const w = pEl.getBoundingClientRect().width / options.tree.parent!.children.length;
-
-      childEl.style.width = `${w}px`;
-    }
-  });
 };
 
 const unHandle = () => {
@@ -104,59 +91,84 @@ const onMouseMove = (ev: MouseEvent) => {
   document.body.ondragstart = () => false;
 
   const parent = options.tree.parent!;
-  const nextElId = parent.children[parent.children.indexOf(options.tree as Layout<Tab>) + 1].id;
+  const index = parent.children.indexOf(options.tree as Layout<Tab>);
+
+  const nEl = parent.children[index + 1];
 
   const pEl = document.getElementById(`clv__layout-id-${parent.id}`)!;
   const el = document.getElementById(`clv__layout-id-${options.tree.id}`)!;
-  const nextEl = document.getElementById(`clv__layout-id-${nextElId}`)!;
+  const hEl = el.querySelectorAll(":scope > .clv__layout-handle").item(0) as HTMLElement;
 
-  const hRect = (
-    el.getElementsByClassName("clv__layout-handle").item(0) as HTMLElement
-  ).getBoundingClientRect();
+  const hRect = hEl.getBoundingClientRect();
 
   if (parent.direction === Direction.Row) {
     const diff = ev.clientX - (hRect.x - hRect.width / 2);
 
-    // drag position-x delta should be (20px)
     if (Math.abs(diff) < 10) {
       return;
     }
 
-    const rect = el.getBoundingClientRect();
-    const nextRect = nextEl.getBoundingClientRect();
-
-    const pWidth = pEl.getBoundingClientRect().width;
+    const pRect = pEl.getBoundingClientRect();
+    const ratio = Math.abs(diff) / pRect.width;
+    const sum = parent.children.reduce((s, r) => s + r.ratio, 0);
 
     if (diff > 0) {
-      // drag position x is superior to handle ->
-      // we append the delta to the layout
+      // TODO : we need to search for the next element where reducing its size is possible
+      // and apply ratio modification
 
-      if (nextRect.width <= pWidth / 5) {
+      if (sum / 5 >= nEl.ratio) {
         return;
       }
 
-      el.style.width = `${rect.width + diff}px`;
-      nextEl.style.width = `${nextRect.width - Math.abs(diff)}px`;
+      options.tree.ratio += ratio;
+      nEl.ratio -= ratio;
     } else {
-      // drag position x is inferior to handle <-
-      // we append the delta to the next layout
-
-      if (rect.width <= pWidth / 5) {
+      if (sum / 5 >= options.tree.ratio) {
         return;
       }
 
-      nextEl.style.width = `${nextRect.width + Math.abs(diff)}px`;
-      el.style.width = `${rect.width - Math.abs(diff)}px`;
+      options.tree.ratio -= ratio;
+      nEl.ratio += ratio;
     }
   } else {
   }
 };
+
+const updateDimensions = () => {
+  if (!options.tree.parent) {
+    return;
+  }
+
+  const el = document.getElementById(`clv__layout-id-${options.tree.id}`)!;
+  const pEl = document.getElementById(`clv__layout-id-${options.tree.parent!.id}`)!;
+
+  const sum = options.tree.parent.children.reduce((s, r) => s + r.ratio, 0);
+
+  if (options.tree.parent.direction === Direction.Row) {
+    const width = (pEl.offsetWidth / sum) * options.tree.ratio;
+
+    el.style.width = `${width}px`;
+    el.style.height = "";
+  } else {
+    const height = (pEl.offsetHeight / sum) * options.tree.ratio;
+    el.style.height = `${height}px`;
+    el.style.width = "";
+  }
+};
+
+watch(
+  () => [options.tree.ratio, options.tree.parent?.children.length],
+  () => updateDimensions(),
+  { flush: "post" }
+);
 
 onMounted(() => {
   window.addEventListener("mouseup", unHandle);
   window.addEventListener("mouseleave", unHandle);
   window.addEventListener("blur", unHandle);
   window.addEventListener("mousemove", onMouseMove);
+
+  updateDimensions();
 });
 
 onBeforeUnmount(() => {

@@ -48,6 +48,7 @@ export interface Layout<T = Tab> extends BaseUI {
   children: Array<T>;
   direction: Direction;
   active?: string;
+  ratio: number;
 }
 
 export interface LayoutActions {

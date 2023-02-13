@@ -48,6 +48,7 @@ export const transformLayoutTemplate = (
     parent,
     id: useId(),
     direction: template.direction ?? Direction.Row,
+    ratio: 1,
   };
 
   if (template.children.length === 0) {
@@ -233,6 +234,8 @@ export const useCloseTab = (id: string, layout: Layout): void => {
 
   if (layout.children.length === 0) {
     if (layout.parent) {
+      const removedLayout = layout.parent.children.find((child) => child.id === layout.id)!;
+
       layout.parent.children = layout.parent.children.filter((child) => child.id !== layout.id);
 
       if (layout.parent.children.length === 1) {
@@ -245,6 +248,14 @@ export const useCloseTab = (id: string, layout: Layout): void => {
         (layout.parent as unknown as Layout).direction = single.direction;
         (layout.parent as unknown as Layout).active = single.active;
       } else {
+        // we need to share the removed ratio over the remaining layouts
+        const ratio = removedLayout.ratio;
+        const sum = layout.parent.children.reduce((s, l) => s + l.ratio, 0);
+
+        layout.parent.children.forEach((child) => {
+          // add ratio proportionally
+          child.ratio += ratio * (child.ratio / sum);
+        });
       }
     }
   } else {
@@ -345,6 +356,7 @@ export const useOnDrop = (
         type: layout.type,
         active: layout.active,
         parent: layout as unknown as Layout<Layout>,
+        ratio: 1,
       };
 
       oldLayout.children.forEach((child) => (child.parent = oldLayout));
