@@ -52,7 +52,11 @@ export const transformLayoutTemplate = (
   };
 
   if (template.children.length === 0) {
-    throw "Unexpected State (transformLayoutTemplate): Layout children should have at least 1 tab, or 2 layouts.";
+    if (!parent) {
+      return layout;
+    } else {
+      throw "Unexpected State (transformLayoutTemplate): Layout children should have at least 1 tab, or 2 layouts.";
+    }
   }
 
   if ((template.children as Array<TabTemplate>).every((child) => child.type === UIType.Tab)) {
@@ -76,9 +80,13 @@ export const transformLayoutTemplate = (
       throw "Invalid Parameters (transformLayoutTemplate): Layout children should be 2 or more.";
     }
 
-    (layout.children as unknown as Array<Layout>) = children.map((child) =>
-      transformLayoutTemplate(child, layout as unknown as Layout<Layout>)
-    );
+    (layout.children as unknown as Array<Layout>) = children.map((child) => {
+      const tmp = transformLayoutTemplate(child, layout as unknown as Layout<Layout>);
+
+      tmp.ratio = 1 / children.length;
+
+      return tmp;
+    });
   } else {
     throw "Unexpected State: Layout children cannot be a mix of Tabs and Layouts.";
   }

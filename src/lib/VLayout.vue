@@ -220,7 +220,12 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="clv__layout-wrapper" :id="`clv__layout-id-${options.tree.id}`" :class="resizeHandle">
+  <div
+    class="clv__layout-wrapper"
+    :id="`clv__layout-id-${options.tree.id}`"
+    :class="resizeHandle"
+    :data-layout-ratio="options.tree.ratio"
+  >
     <div v-if="isEmpty" class="clv__layout-empty">
       <VDropZone @on-drop="emptyDrop" :multi="false">
         <slot name="empty">Nothing here</slot>
@@ -245,7 +250,7 @@ onBeforeUnmount(() => {
           </div>
         </VDropZone>
       </div>
-      <VTabContent @on-drop="drop" :colors="options.colors">
+      <VTabContent @on-drop="drop">
         <slot
           name="tab"
           v-bind="getTab(options.tree.active!,(options.tree.children as Array<Tab>))"
@@ -272,8 +277,10 @@ onBeforeUnmount(() => {
 
 <style>
 :root {
-  --clv__handle-hover: #3e3e3e;
-  --clv__handle-active: #00000099;
+  --clv__handle-hover-color: #3e3e3e;
+  --clv__handle-active-color: #00000099;
+  --clv__drag-side-color: #000000aa;
+  --clv__drag-overlay-color: #0000ff11;
 }
 
 .clv__layout-wrapper {
@@ -289,6 +296,12 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   flex: 1;
+}
+
+.clv__layout-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .clv__tabs-container-bar {
@@ -316,11 +329,11 @@ onBeforeUnmount(() => {
 }
 
 .clv__layout-handle:hover {
-  background-color: var(--clv__handle-hover);
+  background-color: var(--clv__handle-hover-color);
 }
 
 .clv__layout-handle:active {
-  background-color: var(--clv__handle-active);
+  background-color: var(--clv__handle-active-color);
 }
 
 .clv__layout-handle-column > .clv__layout-handle {

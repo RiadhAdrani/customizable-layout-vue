@@ -5,15 +5,11 @@ import { VLayout, useLayout, createLayout, createTab } from "./lib";
 const { options } = useLayout(
   createLayout({
     direction: Direction.Row,
-    children: [
-      createLayout({ children: [createTab({ title: "Hello", data: { text: "Hello, World" } })] }),
-      createLayout({ children: [createTab({ title: "Hello", data: { text: "Hello, World" } })] }),
-      createLayout({ children: [createTab({ title: "Hello", data: { text: "Hello, World" } })] }),
-    ],
+    children: [],
   }),
   {
     onUnknownDropped() {
-      return createTab({ title: "Data", data: { text: "Custom Tab" } });
+      return createTab({ title: "Tab", data: { text: "Custom Tab" } });
     },
     areSameTab() {
       return false;
@@ -24,11 +20,15 @@ const { options } = useLayout(
 
 <template>
   <VLayout :options="options">
-    <template #tab="tab">
-      <div class="hello">{{ tab.data!.text }}</div>
+    <template #tab>
+      <div class="hello">
+        Lorem ipsum dolor sit amet consectetur adipisicing elit. Quo inventore culpa omnis. Eveniet
+        deleniti odio velit fuga explicabo vitae unde dignissimos nemo, neque accusamus, iure rem at
+        ab, facere ipsum?
+      </div>
     </template>
     <template #empty>
-      <h1>Drag something here :)</h1>
+      <h2 class="empty-layout">Drag Anything here to get started.</h2>
     </template>
     <template #tab-btn="{ active, title, toggle, close }">
       <button @click="toggle" @contextmenu.prevent="close">
@@ -43,7 +43,13 @@ const { options } = useLayout(
   padding: 10px;
   background: #1e1e1e;
   flex: 1;
+  overflow: auto;
 }
+
+.empty-layout {
+  margin: auto 0px;
+}
+
 .logo {
   height: 6em;
   padding: 1.5em;

@@ -58,6 +58,7 @@ describe("useLayout", () => {
         direction: Direction.Row,
         id: "1",
         type: UIType.Layout,
+        ratio: 1,
       };
 
       const tab = transformTabTemplate({ title: "Test", type: UIType.Tab }, parent);
@@ -71,11 +72,27 @@ describe("useLayout", () => {
 
   describe("transformLayoutTemplate", () => {
     it("should throw when children array is empty", () => {
-      const template = createLayout({ children: [] });
+      const template = createLayout({
+        children: [
+          createLayout({ children: [] }),
+          createLayout({ children: [createTab({ title: "Hello" })] }),
+        ],
+      });
 
       expect(() => transformLayoutTemplate(template)).toThrow(
         "Unexpected State (transformLayoutTemplate): Layout children should have at least 1 tab, or 2 layouts."
       );
+    });
+
+    it("should create a new layout with empty children when parent is no provided", () => {
+      const layout = transformLayoutTemplate(
+        createLayout({
+          children: [],
+        })
+      );
+
+      expect(layout).toBeDefined();
+      expect(layout.children.length).toBe(0);
     });
 
     it("should create a Layout of Tabs", () => {

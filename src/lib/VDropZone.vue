@@ -1,21 +1,17 @@
 <script lang="ts" setup>
-import { computed, onMounted, ref } from "vue";
-import { Side, defaultColors } from "./types";
+import { computed, ref } from "vue";
+import { Side } from "./types";
 import { calculateSide } from "./useLayout";
 
 const t = 10;
 
-const { multi, disabled, overlayColor, sideColor, stopPropagation } = defineProps({
+const { multi, disabled, stopPropagation } = defineProps({
   multi: { type: Boolean, required: false, default: true },
   disabled: { type: Boolean, required: false, default: false },
   stopPropagation: { type: Boolean, required: false, default: false },
-  overlayColor: { type: String, required: false, default: defaultColors.contentOverlay },
-  sideColor: { type: String, required: false, default: defaultColors.contentSide },
 });
 
 const emit = defineEmits(["on-drop"]);
-
-const el = ref<HTMLDivElement>(null as unknown as HTMLDivElement);
 
 const side = ref<Side | undefined>(undefined);
 
@@ -64,18 +60,10 @@ const onDrop = (ev: DragEvent) => {
 const onDrag = (ev: DragEvent) => {
   ev.preventDefault();
 };
-
-onMounted(() => {
-  const zone = el.value;
-
-  zone.style.setProperty("--overlay-color", overlayColor);
-  zone.style.setProperty("--side-color", sideColor);
-});
 </script>
 
 <template>
   <div
-    ref="el"
     class="clv__drop-zone"
     :class="classes"
     @drag="onDrag"
@@ -90,9 +78,6 @@ onMounted(() => {
 
 <style>
 .clv__drop-zone {
-  --side-color: #000000aa;
-  --overlay-color: #0000ff11;
-
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -104,7 +89,7 @@ onMounted(() => {
   content: "";
   position: absolute;
   display: none;
-  background-color: var(--side-color);
+  background-color: var(--clv__drag-side-color);
   z-index: 2;
 }
 
@@ -113,7 +98,7 @@ onMounted(() => {
   position: absolute;
   z-index: 1;
   inset: 0px;
-  background-color: var(--overlay-color);
+  background-color: var(--clv__drag-overlay-color);
 }
 
 .clv__drop-zone-active .clv__drop-zone-overlay {
