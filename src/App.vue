@@ -4,10 +4,11 @@ import { VLayout, useLayout, createLayout, createTab } from "./lib";
 
 const { startTab, options } = useLayout(
   createLayout({
-    direction: Direction.Column,
+    direction: Direction.Row,
     children: [
-      createTab({ title: "Hello", data: { text: "Hello, World" } }),
-      createTab({ title: "World", data: { text: "World, Hello" } }),
+      createLayout({ children: [createTab({ title: "Hello", data: { text: "Hello, World" } })] }),
+      createLayout({ children: [createTab({ title: "Hello", data: { text: "Hello, World" } })] }),
+      createLayout({ children: [createTab({ title: "Hello", data: { text: "Hello, World" } })] }),
     ],
   }),
   {

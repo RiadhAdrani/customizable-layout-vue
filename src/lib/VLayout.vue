@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { Layout, Tab, UIType, Direction, Side, UseLayoutOutput, TabButtonSlotProps } from "./types";
 import { getType, getTab, processDragData } from "./useLayout";
 import VDropZone from "./VDropZone.vue";
@@ -9,6 +9,8 @@ import VTabContent from "./VTabContent.vue";
 const { options } = defineProps<{
   options: UseLayoutOutput;
 }>();
+
+const handling = ref(false);
 
 const forLayouts = computed(() => getType(options.tree.children) === UIType.Layout);
 
@@ -25,6 +27,19 @@ const classList = computed(() => {
   }
 
   return list.join(" ");
+});
+
+const resizeHandle = computed(() => {
+  const parent = options.tree.parent;
+
+  if (
+    !parent ||
+    parent.children.indexOf(options.tree as Layout<Tab>) === parent.children.length - 1
+  ) {
+    return "";
+  }
+
+  return `clv__layout-handle-${parent.direction}`;
 });
 
 const toggle = (id: string) => {
@@ -54,10 +69,97 @@ const emptyDrop = ({ ev }: { ev: DragEvent }) => {
 
   options.actions.onEmptyDrop(data);
 };
+
+const onMouseDown = () => {
+  handling.value = true;
+
+  const pEl = document.getElementById(`clv__layout-id-${options.tree.parent!.id}`)!;
+
+  // we need to go through all element and set element width;
+  options.tree.parent!.children.forEach((child) => {
+    const childEl = document.getElementById(`clv__layout-id-${child.id}`)! as HTMLElement;
+
+    if (!childEl.style.width) {
+      const w = pEl.getBoundingClientRect().width / options.tree.parent!.children.length;
+
+      childEl.style.width = `${w}px`;
+    }
+  });
+};
+
+const unHandle = () => {
+  handling.value = false;
+  document.body.ondragstart = null;
+  document.body.style.cursor = "";
+};
+
+const onMouseMove = (ev: MouseEvent) => {
+  if (!handling.value) {
+    return;
+  }
+
+  document.body.style.cursor =
+    options.tree.parent!.direction === Direction.Row ? "col-resize" : "row-resize";
+
+  document.body.ondragstart = () => false;
+
+  const parent = options.tree.parent!;
+  const nextElId = parent.children[parent.children.indexOf(options.tree as Layout<Tab>) + 1].id;
+
+  const el = document.getElementById(`clv__layout-id-${options.tree.id}`)!;
+  const nextEl = document.getElementById(`clv__layout-id-${nextElId}`)!;
+
+  const hRect = (
+    el.getElementsByClassName("clv__layout-handle").item(0) as HTMLElement
+  ).getBoundingClientRect();
+
+  if (parent.direction === Direction.Row) {
+    const diff = ev.clientX - (hRect.x - hRect.width / 2);
+
+    // drag position-x delta should be (20px)
+    if (Math.abs(diff) < 10) {
+      return;
+    }
+
+    const rect = el.getBoundingClientRect();
+    const nextRect = nextEl.getBoundingClientRect();
+
+    // TODO : need to check if minimum width for both element or next sibling is reached.
+
+    if (diff > 0) {
+      // drag position x is superior to handle ->
+      // we append the delta to the layout
+
+      el.style.width = `${rect.width + diff}px`;
+      nextEl.style.width = `${nextRect.width - Math.abs(diff)}px`;
+    } else {
+      // drag position x is inferior to handle <-
+      // we append the delta to the next layout
+
+      nextEl.style.width = `${nextRect.width + Math.abs(diff)}px`;
+      el.style.width = `${rect.width - Math.abs(diff)}px`;
+    }
+  } else {
+  }
+};
+
+onMounted(() => {
+  window.addEventListener("mouseup", unHandle);
+  window.addEventListener("mouseleave", unHandle);
+  window.addEventListener("blur", unHandle);
+  window.addEventListener("mousemove", onMouseMove);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("blur", unHandle);
+  window.removeEventListener("mousemove", onMouseMove);
+  window.removeEventListener("mouseup", unHandle);
+  window.removeEventListener("mouseleave", unHandle);
+});
 </script>
 
 <template>
-  <div class="clv__layout-wrapper">
+  <div class="clv__layout-wrapper" :id="`clv__layout-id-${options.tree.id}`" :class="resizeHandle">
     <div v-if="isEmpty" class="clv__layout-empty">
       <VDropZone @on-drop="emptyDrop" :multi="false">
         <slot name="empty">Nothing here</slot>
@@ -103,15 +205,23 @@ const emptyDrop = ({ ev }: { ev: DragEvent }) => {
         </template>
       </VLayout>
     </div>
+    <div v-if="resizeHandle !== ''" class="clv__layout-handle" @mousedown="onMouseDown" />
   </div>
 </template>
 
 <style>
+:root {
+  --clv__handle-hover: #3e3e3e;
+  --clv__handle-active: #00000099;
+}
+
 .clv__layout-wrapper {
   display: flex;
   flex-direction: column;
-  flex: 1;
+  flex-grow: 1;
+  flex-shrink: 1;
   padding: 2px;
+  position: relative;
 }
 
 .clv__tabs-container {
@@ -133,7 +243,43 @@ const emptyDrop = ({ ev }: { ev: DragEvent }) => {
 .clv__layout-container-row {
   flex-direction: row;
 }
+
 .clv__layout-container-col {
   flex-direction: column;
+}
+
+.clv__layout-handle {
+  padding: 5px;
+  position: absolute;
+}
+
+.clv__layout-handle:hover {
+  background-color: var(--clv__handle-hover);
+}
+
+.clv__layout-handle:active {
+  background-color: var(--clv__handle-active);
+}
+
+.clv__layout-handle-column {
+  min-height: 10%;
+}
+
+.clv__layout-handle-row {
+  min-width: 10%;
+}
+
+.clv__layout-handle-column > .clv__layout-handle {
+  cursor: row-resize;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+
+.clv__layout-handle-row > .clv__layout-handle {
+  cursor: col-resize;
+  right: 0;
+  bottom: 0;
+  top: 0;
 }
 </style>
