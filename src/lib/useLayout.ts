@@ -428,6 +428,14 @@ export default <T extends Record<string, unknown> = Record<string, unknown>>(
 
   const areSame = options.areSameTab || (() => false);
 
+  const startTab = (tab: TabTemplate<T>) => {
+    if (tree.children.length !== 0) {
+      return;
+    }
+
+    useAddTab(tab, tree, areSame);
+  };
+
   const actions: LayoutActions = {
     addTab(tab, id, position) {
       const layout = findLayout(id, tree as unknown as Layout<Layout>);
@@ -480,5 +488,5 @@ export default <T extends Record<string, unknown> = Record<string, unknown>>(
 
   const colors: LayoutColorOptions = { ...defaultColors, ...options.colors };
 
-  return { options: { tree, actions, colors } };
+  return { startTab, options: { tree, actions, colors } };
 };

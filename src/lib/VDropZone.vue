@@ -3,7 +3,7 @@ import { computed, onMounted, ref } from "vue";
 import { Side, defaultColors } from "./types";
 import { calculateSide } from "./useLayout";
 
-const t = 5;
+const t = 10;
 
 const { multi, disabled, overlayColor, sideColor, stopPropagation } = defineProps({
   multi: { type: Boolean, required: false, default: true },

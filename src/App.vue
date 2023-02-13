@@ -2,7 +2,7 @@
 import { Direction } from "./lib/types";
 import { VLayout, useLayout, createLayout, createTab } from "./lib";
 
-const { options } = useLayout(
+const { startTab, options } = useLayout(
   createLayout({
     direction: Direction.Column,
     children: [
@@ -19,10 +19,17 @@ const { options } = useLayout(
     },
   }
 );
+
+const onClick = () => {
+  startTab(createTab({ title: "Newest Tab", data: {} }));
+};
 </script>
 
 <template>
   <button draggable="true">drag me</button>
+  <br />
+  <button @click="onClick">Start new Tab</button>
+  <br />
   <VLayout :options="options">
     <template #tab="tab">
       <div class="hello">{{ tab.data!.text }}</div>
