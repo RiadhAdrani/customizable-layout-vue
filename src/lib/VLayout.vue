@@ -106,6 +106,7 @@ const onMouseMove = (ev: MouseEvent) => {
   const parent = options.tree.parent!;
   const nextElId = parent.children[parent.children.indexOf(options.tree as Layout<Tab>) + 1].id;
 
+  const pEl = document.getElementById(`clv__layout-id-${parent.id}`)!;
   const el = document.getElementById(`clv__layout-id-${options.tree.id}`)!;
   const nextEl = document.getElementById(`clv__layout-id-${nextElId}`)!;
 
@@ -124,17 +125,25 @@ const onMouseMove = (ev: MouseEvent) => {
     const rect = el.getBoundingClientRect();
     const nextRect = nextEl.getBoundingClientRect();
 
-    // TODO : need to check if minimum width for both element or next sibling is reached.
+    const pWidth = pEl.getBoundingClientRect().width;
 
     if (diff > 0) {
       // drag position x is superior to handle ->
       // we append the delta to the layout
+
+      if (nextRect.width <= pWidth / 5) {
+        return;
+      }
 
       el.style.width = `${rect.width + diff}px`;
       nextEl.style.width = `${nextRect.width - Math.abs(diff)}px`;
     } else {
       // drag position x is inferior to handle <-
       // we append the delta to the next layout
+
+      if (rect.width <= pWidth / 5) {
+        return;
+      }
 
       nextEl.style.width = `${nextRect.width + Math.abs(diff)}px`;
       el.style.width = `${rect.width - Math.abs(diff)}px`;
@@ -251,6 +260,7 @@ onBeforeUnmount(() => {
 .clv__layout-handle {
   padding: 5px;
   position: absolute;
+  transition-duration: 150ms;
 }
 
 .clv__layout-handle:hover {
