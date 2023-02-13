@@ -59,14 +59,19 @@ button:focus-visible {
   padding: 2em;
 }
 
+* {
+  box-sizing: border-box;
+}
+
 #app {
-  padding: 2rem;
   text-align: center;
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: stretch;
   justify-content: stretch;
+  max-height: 100vh;
+  overflow-y: hidden;
 }
 
 @media (prefers-color-scheme: light) {

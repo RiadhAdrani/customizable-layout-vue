@@ -19,9 +19,14 @@ const isEmpty = computed(() => options.tree.children.length === 0);
 const classList = computed(() => {
   const list = [];
 
+  if (!options.tree.parent) {
+    list.push("clv__layout-root");
+  }
+
   if (options.tree.direction === Direction.Row) {
     list.push("clv__layout-container-row");
   }
+
   if (options.tree.direction === Direction.Column) {
     list.push("clv__layout-container-col");
   }
@@ -29,17 +34,23 @@ const classList = computed(() => {
   return list.join(" ");
 });
 
-const resizeHandle = computed(() => {
+const resizeHandle = computed<string>(() => {
   const parent = options.tree.parent;
 
+  const list: Array<string> = [];
+
   if (
-    !parent ||
-    parent.children.indexOf(options.tree as Layout<Tab>) === parent.children.length - 1
+    parent &&
+    parent.children.indexOf(options.tree as Layout<Tab>) !== parent.children.length - 1
   ) {
-    return "";
+    list.push(`clv__layout-handle-${parent.direction}`);
   }
 
-  return `clv__layout-handle-${parent.direction}`;
+  if (!parent) {
+    list.push("clv__layout-root");
+  }
+
+  return list.join(" ");
 });
 
 const toggle = (id: string) => {
@@ -116,6 +127,8 @@ const onMouseMove = (ev: MouseEvent) => {
       // TODO : we need to search for the next element where reducing its size is possible
       // and apply ratio modification
 
+      // TODO : we need to check if all other element are minimal
+
       if (sum / 5 >= nEl.ratio) {
         return;
       }
@@ -131,15 +144,44 @@ const onMouseMove = (ev: MouseEvent) => {
       nEl.ratio += ratio;
     }
   } else {
+    const diff = ev.clientY - (hRect.y - hRect.height / 2);
+
+    if (Math.abs(diff) < 10) {
+      return;
+    }
+
+    const pRect = pEl.getBoundingClientRect();
+    const ratio = Math.abs(diff) / pRect.height;
+    const sum = parent.children.reduce((s, r) => s + r.ratio, 0);
+
+    if (diff > 0) {
+      // TODO : we need to search for the next element where reducing its size is possible
+      // and apply ratio modification
+
+      if (sum / 5 >= nEl.ratio) {
+        return;
+      }
+
+      options.tree.ratio += ratio;
+      nEl.ratio -= ratio;
+    } else {
+      if (sum / 5 >= options.tree.ratio) {
+        return;
+      }
+
+      options.tree.ratio -= ratio;
+      nEl.ratio += ratio;
+    }
   }
 };
 
 const updateDimensions = () => {
+  const el = document.getElementById(`clv__layout-id-${options.tree.id}`)!;
+
   if (!options.tree.parent) {
     return;
   }
 
-  const el = document.getElementById(`clv__layout-id-${options.tree.id}`)!;
   const pEl = document.getElementById(`clv__layout-id-${options.tree.parent!.id}`)!;
 
   const sum = options.tree.parent.children.reduce((s, r) => s + r.ratio, 0);
@@ -147,12 +189,10 @@ const updateDimensions = () => {
   if (options.tree.parent.direction === Direction.Row) {
     const width = (pEl.offsetWidth / sum) * options.tree.ratio;
 
-    el.style.width = `${width}px`;
-    el.style.height = "";
+    el.style.flexBasis = `${width}px`;
   } else {
     const height = (pEl.offsetHeight / sum) * options.tree.ratio;
-    el.style.height = `${height}px`;
-    el.style.width = "";
+    el.style.flexBasis = `${height}px`;
   }
 };
 
@@ -281,14 +321,6 @@ onBeforeUnmount(() => {
 
 .clv__layout-handle:active {
   background-color: var(--clv__handle-active);
-}
-
-.clv__layout-handle-column {
-  min-height: 10%;
-}
-
-.clv__layout-handle-row {
-  min-width: 10%;
 }
 
 .clv__layout-handle-column > .clv__layout-handle {
