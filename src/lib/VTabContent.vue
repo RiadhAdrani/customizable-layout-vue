@@ -22,8 +22,10 @@ const onDrop = (data: any) => {
 .clv__tab-content {
   display: flex;
   flex: 1;
-  background-color: #1e1e1e;
   border-radius: 5px;
   position: relative;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
 }
 </style>

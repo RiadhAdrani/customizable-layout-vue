@@ -92,7 +92,7 @@ const unHandle = () => {
 };
 
 const onMouseMove = (ev: MouseEvent) => {
-  if (!handling.value) {
+  if (!handling.value || !options.tree.parent) {
     return;
   }
 
@@ -271,7 +271,7 @@ onBeforeUnmount(() => {
         </template>
       </VLayout>
     </div>
-    <div v-if="resizeHandle !== ''" class="clv__layout-handle" @mousedown="onMouseDown" />
+    <div v-if="options.tree.parent" class="clv__layout-handle" @mousedown="onMouseDown" />
   </div>
 </template>
 
@@ -290,12 +290,18 @@ onBeforeUnmount(() => {
   flex-shrink: 1;
   padding: 2px;
   position: relative;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .clv__tabs-container {
   display: flex;
   flex-direction: column;
   flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .clv__layout-empty {
@@ -312,6 +318,9 @@ onBeforeUnmount(() => {
 .clv__layouts-container {
   display: flex;
   flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .clv__layout-container-row {

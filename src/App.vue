@@ -4,8 +4,11 @@ import { VLayout, useLayout, createLayout, createTab } from "./lib";
 
 const { options } = useLayout(
   createLayout({
-    direction: Direction.Row,
-    children: [],
+    direction: Direction.Column,
+    children: [
+      createLayout({ children: [createTab({ title: "Hello" })] }),
+      createLayout({ children: [createTab({ title: "Hello" })] }),
+    ],
   }),
   {
     onUnknownDropped() {

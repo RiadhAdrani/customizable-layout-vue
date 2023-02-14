@@ -83,6 +83,9 @@ const onDrag = (ev: DragEvent) => {
   align-items: stretch;
   flex: 1;
   position: relative;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .clv__drop-zone-active:after {
