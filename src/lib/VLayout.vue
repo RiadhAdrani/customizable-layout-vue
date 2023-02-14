@@ -135,8 +135,12 @@ const onMouseMove = (ev: MouseEvent) => {
       options.tree.ratio += ratio;
       parent.children[nextResizableIndex].ratio -= ratio;
     } else {
-      const nextResizableIndex = parent.children.findIndex((child, i) => {
-        return i <= index && sum / 5 < child.ratio;
+      let nextResizableIndex = -1;
+
+      parent.children.forEach((child, i) => {
+        if (i <= index && sum / 5 < child.ratio && i > nextResizableIndex) {
+          nextResizableIndex = i;
+        }
       });
 
       if (nextResizableIndex === -1) {
@@ -169,8 +173,12 @@ const onMouseMove = (ev: MouseEvent) => {
       options.tree.ratio += ratio;
       parent.children[nextResizableIndex].ratio -= ratio;
     } else {
-      const nextResizableIndex = parent.children.findIndex((child, i) => {
-        return i <= index && sum / 5 < child.ratio;
+      let nextResizableIndex = -1;
+
+      parent.children.forEach((child, i) => {
+        if (i <= index && sum / 5 < child.ratio && i > nextResizableIndex) {
+          nextResizableIndex = i;
+        }
       });
 
       if (nextResizableIndex === -1) {
@@ -228,12 +236,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div
-    class="clv__layout-wrapper"
-    :id="`clv__layout-id-${options.tree.id}`"
-    :class="resizeHandle"
-    :data-layout-ratio="options.tree.ratio"
-  >
+  <div class="clv__layout-wrapper" :id="`clv__layout-id-${options.tree.id}`" :class="resizeHandle">
     <div v-if="isEmpty" class="clv__layout-empty">
       <VDropZone @on-drop="emptyDrop" :multi="false">
         <slot name="empty">Nothing here</slot>
@@ -340,7 +343,7 @@ onBeforeUnmount(() => {
 }
 
 .clv__layout-handle {
-  padding: 5px;
+  padding: 6px;
   position: absolute;
   transition-duration: 150ms;
 }
