@@ -124,23 +124,26 @@ const onMouseMove = (ev: MouseEvent) => {
     const sum = parent.children.reduce((s, r) => s + r.ratio, 0);
 
     if (diff > 0) {
-      // TODO : we need to search for the next element where reducing its size is possible
-      // and apply ratio modification
+      const nextResizableIndex = parent.children.findIndex((child, i) => {
+        return i > index && sum / 5 < child.ratio;
+      });
 
-      // TODO : we need to check if all other element are minimal
-
-      if (sum / 5 >= nEl.ratio) {
+      if (nextResizableIndex === -1) {
         return;
       }
 
       options.tree.ratio += ratio;
-      nEl.ratio -= ratio;
+      parent.children[nextResizableIndex].ratio -= ratio;
     } else {
-      if (sum / 5 >= options.tree.ratio) {
+      const nextResizableIndex = parent.children.findIndex((child, i) => {
+        return i <= index && sum / 5 < child.ratio;
+      });
+
+      if (nextResizableIndex === -1) {
         return;
       }
 
-      options.tree.ratio -= ratio;
+      parent.children[nextResizableIndex].ratio -= ratio;
       nEl.ratio += ratio;
     }
   } else {
@@ -155,21 +158,26 @@ const onMouseMove = (ev: MouseEvent) => {
     const sum = parent.children.reduce((s, r) => s + r.ratio, 0);
 
     if (diff > 0) {
-      // TODO : we need to search for the next element where reducing its size is possible
-      // and apply ratio modification
+      const nextResizableIndex = parent.children.findIndex((child, i) => {
+        return i > index && sum / 5 < child.ratio;
+      });
 
-      if (sum / 5 >= nEl.ratio) {
+      if (nextResizableIndex === -1) {
         return;
       }
 
       options.tree.ratio += ratio;
-      nEl.ratio -= ratio;
+      parent.children[nextResizableIndex].ratio -= ratio;
     } else {
-      if (sum / 5 >= options.tree.ratio) {
+      const nextResizableIndex = parent.children.findIndex((child, i) => {
+        return i <= index && sum / 5 < child.ratio;
+      });
+
+      if (nextResizableIndex === -1) {
         return;
       }
 
-      options.tree.ratio -= ratio;
+      parent.children[nextResizableIndex].ratio -= ratio;
       nEl.ratio += ratio;
     }
   }
