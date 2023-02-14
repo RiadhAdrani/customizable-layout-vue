@@ -1,4 +1,4 @@
-import { it, describe, expect, beforeEach } from "vitest";
+import { it, describe, expect, beforeEach, vitest } from "vitest";
 import { Direction, DraggedTab, Layout, Side, Tab, UIType } from "../types";
 import {
   createTab,
@@ -16,6 +16,7 @@ import {
   findUiByPath,
   findLayout,
   useOnDrop,
+  calculateCurrentDepth,
 } from "../useLayout";
 
 describe("useLayout", () => {
@@ -382,6 +383,55 @@ describe("useLayout", () => {
 
       expect(res).toBeDefined();
       expect(res?.children.length).toBe(2);
+    });
+  });
+
+  describe("calculateMaxDepth", () => {
+    it("should return 0 for root", () => {
+      const layout = transformLayoutTemplate(createLayout({ children: [] }));
+
+      expect(calculateCurrentDepth(layout)).toBe(0);
+    });
+
+    it("should return 1", () => {
+      const root = transformLayoutTemplate(
+        createLayout({
+          children: [
+            createLayout({ children: [createTab({ title: "Hello" })] }),
+            createLayout({ children: [createTab({ title: "Hello" })] }),
+          ],
+        })
+      ) as unknown as Layout<Layout>;
+
+      expect(calculateCurrentDepth(root.children[0])).toBe(1);
+    });
+
+    it("should return 3", () => {
+      const root = transformLayoutTemplate(
+        createLayout({
+          children: [
+            createLayout({ children: [createTab({ title: "Hello" })] }),
+            createLayout({
+              children: [
+                createLayout({
+                  children: [
+                    createLayout({ children: [createTab({ title: "Hello" })] }),
+                    createLayout({ children: [createTab({ title: "Hello" })] }),
+                  ],
+                }),
+                createLayout({
+                  children: [
+                    createLayout({ children: [createTab({ title: "Hello" })] }),
+                    createLayout({ children: [createTab({ title: "Hello" })] }),
+                  ],
+                }),
+              ],
+            }),
+          ],
+        })
+      ) as unknown as Layout<Layout<Layout<Layout>>>;
+
+      expect(calculateCurrentDepth(root.children[1].children[0].children[0])).toBe(3);
     });
   });
 
@@ -811,15 +861,11 @@ describe("useLayout", () => {
         createLayout({ children: [createTab({ title: "1", data: { id: 1 } })] })
       );
 
-      useOnDrop(
-        { id: 2 },
-        layout,
-        Side.Center,
-        () => false,
-        (data) => {
-          return createTab({ title: "2", data });
-        }
-      );
+      useOnDrop({ id: 2 }, layout, Side.Center, {
+        compareTabs: () => false,
+        onMaxDepthReached: () => {},
+        onUnknownDropped: (data) => createTab({ title: "2", data }),
+      });
 
       expect(layout.children.length).toBe(2);
       expect(layout.children[0].data).toStrictEqual({ id: 1 });
@@ -854,13 +900,11 @@ describe("useLayout", () => {
         id: parent.children[1].children[0].id,
       };
 
-      useOnDrop(
-        data,
-        layout,
-        Side.Center,
-        () => false,
-        () => undefined
-      );
+      useOnDrop(data, layout, Side.Center, {
+        compareTabs: () => false,
+        onMaxDepthReached: () => {},
+        onUnknownDropped: () => undefined,
+      });
 
       expect(layout.children.length).toBe(3);
       expect(layout.children[0].data).toStrictEqual({ id: 1 });
@@ -887,15 +931,11 @@ describe("useLayout", () => {
           createLayout({ children: [createTab({ title: "1", data: { id: 1 } })] })
         );
 
-        useOnDrop(
-          { id: 2 },
-          layout,
-          side,
-          () => false,
-          (data) => {
-            return createTab({ title: "2", data });
-          }
-        );
+        useOnDrop({ id: 2 }, layout, side, {
+          compareTabs: () => false,
+          onMaxDepthReached: () => {},
+          onUnknownDropped: (data) => createTab({ title: "2", data }),
+        });
 
         expect(layout.children.length).toBe(2);
         expect(getType(layout.children)).toBe(UIType.Layout);
@@ -923,15 +963,11 @@ describe("useLayout", () => {
         createLayout({ children: [createTab({ title: "1", data: { id: 1 } })] })
       );
 
-      useOnDrop(
-        { id: 2 },
-        layout,
-        Side.Center,
-        () => true,
-        (data) => {
-          return createTab({ title: "2", data });
-        }
-      );
+      useOnDrop({ id: 2 }, layout, Side.Center, {
+        compareTabs: () => true,
+        onMaxDepthReached: () => {},
+        onUnknownDropped: (data) => createTab({ title: "1", data }),
+      });
 
       expect(layout.children.length).toBe(1);
     });
@@ -963,15 +999,11 @@ describe("useLayout", () => {
 
           const layout = parent.children[1];
 
-          useOnDrop(
-            { id: "test" },
-            layout,
-            side,
-            () => false,
-            (data) => {
-              return createTab({ title: "test", data });
-            }
-          );
+          useOnDrop({ id: "test" }, layout, side, {
+            compareTabs: () => false,
+            onMaxDepthReached: () => {},
+            onUnknownDropped: (data) => createTab({ title: "test", data }),
+          });
 
           expect(parent.children.length).toBe(4);
 
@@ -1026,15 +1058,11 @@ describe("useLayout", () => {
         parent.direction = direction;
         const layout = parent.children[0];
 
-        useOnDrop(
-          { id: "test" },
-          layout,
-          side,
-          () => false,
-          (data) => {
-            return createTab({ title: "test", data });
-          }
-        );
+        useOnDrop({ id: "test" }, layout, side, {
+          compareTabs: () => false,
+          onMaxDepthReached: () => {},
+          onUnknownDropped: (data) => createTab({ title: "test", data }),
+        });
 
         expect(parent.children.length).toBe(3);
 
@@ -1100,13 +1128,11 @@ describe("useLayout", () => {
         data: parent.children[1].children[0].data,
       };
 
-      useOnDrop(
-        dragData,
-        layout,
-        Side.Right,
-        () => false,
-        () => undefined
-      );
+      useOnDrop(dragData, layout, Side.Right, {
+        compareTabs: () => false,
+        onMaxDepthReached: () => {},
+        onUnknownDropped: (data) => undefined,
+      });
 
       expect(parent.direction).toBe(Direction.Row);
       expect(parent.type).toBe(UIType.Layout);
@@ -1155,13 +1181,11 @@ describe("useLayout", () => {
         data: parent.children[1].children[0].data,
       };
 
-      useOnDrop(
-        dragData,
-        layout,
-        Side.Right,
-        () => false,
-        () => undefined
-      );
+      useOnDrop(dragData, layout, Side.Right, {
+        compareTabs: () => false,
+        onMaxDepthReached: () => {},
+        onUnknownDropped: () => undefined,
+      });
 
       expect(parent.direction).toBe(Direction.Column);
       expect(parent.type).toBe(UIType.Layout);
@@ -1184,6 +1208,45 @@ describe("useLayout", () => {
       expect(c2.type).toBe(UIType.Layout);
       expect(c2.children[0].title).toBe("3");
       expect(c2.children[0].data).toStrictEqual({ id: 3 });
+    });
+
+    it("should not create a new layout when max depth is reached", () => {
+      const parent = transformLayoutTemplate(
+        createLayout({
+          direction: Direction.Column,
+          children: [
+            createLayout({
+              children: [createTab({ title: "1", data: { id: 1 } })],
+            }),
+            createLayout({
+              children: [createTab({ title: "2", data: { id: 2 } })],
+            }),
+          ],
+        })
+      ) as unknown as Layout<Layout>;
+
+      const layout = parent.children[0];
+
+      const id = parent.children[1].children[0].id;
+
+      const dragData: DraggedTab = {
+        id,
+        signature: "__dragged__tab__",
+        type: UIType.Tab,
+        data: parent.children[1].children[0].data,
+      };
+
+      const onMaxDepthReached = vitest.fn(() => {});
+
+      useOnDrop(dragData, layout, Side.Right, {
+        compareTabs: () => false,
+        onMaxDepthReached,
+        onUnknownDropped: () => createTab({ title: "test", data: {} }),
+        maxDepth: 1,
+      });
+
+      expect(onMaxDepthReached).toHaveBeenCalledTimes(1);
+      expect(parent.children.length).toBe(2);
     });
   });
 });

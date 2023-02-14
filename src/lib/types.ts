@@ -71,26 +71,22 @@ export interface DraggedTab extends Omit<TabTemplate<Record<string, unknown>>, "
   signature: DraggedSignature;
 }
 
-export interface UseLayoutOptions<T> {
-  onUnknownDropped: (data: Record<string, unknown>) => TabTemplate | undefined;
-  areSameTab?: (tab1Data: T, tab2Data: T) => boolean;
-  colors?: LayoutColorOptions;
+export type OnUnknownDropped<T> = (data: T) => TabTemplate | undefined;
+export type CompareTabs<T> = (tab1Data: T, tab2Data: T) => boolean;
+export type OnMaxDepthReached = () => void;
+
+export interface UseOnDropOptions<T> {
+  onUnknownDropped: OnUnknownDropped<T>;
+  compareTabs: CompareTabs<T>;
+  onMaxDepthReached?: OnMaxDepthReached;
+  maxDepth?: number;
 }
 
-export interface LayoutColorOptions {
-  contentOverlay?: string;
-  contentSide?: string;
-}
-
-export const defaultColors: LayoutColorOptions = {
-  contentOverlay: "#0000ff11",
-  contentSide: "#000000aa",
-};
+export interface UseLayoutOptions<T> extends UseOnDropOptions<T> {}
 
 export interface UseLayoutOutput {
   tree: Layout<Layout | Tab>;
   actions: LayoutActions;
-  colors: LayoutColorOptions;
 }
 
 export interface TabButtonSlotProps<T = Record<string, unknown>> {

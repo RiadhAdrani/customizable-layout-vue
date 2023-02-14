@@ -261,7 +261,7 @@ onBeforeUnmount(() => {
       <VLayout
         v-for="item in (options.tree.children as Array<Layout>)"
         :key="item.id"
-        :options="{ tree: item, actions: options.actions, colors: options.colors }"
+        :options="{ tree: item, actions: options.actions }"
       >
         <template #tab="data">
           <slot name="tab" v-bind="(data as Tab)" />

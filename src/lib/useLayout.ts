@@ -13,8 +13,7 @@ import {
   Side,
   DraggedTab,
   UseLayoutOptions,
-  LayoutColorOptions,
-  defaultColors,
+  UseOnDropOptions,
 } from "./types";
 import { v4 as useId } from "uuid";
 
@@ -299,6 +298,16 @@ export const calculateSide = (e: DragEvent): Side => {
   return Side.Center;
 };
 
+export const calculateCurrentDepth = (layout: Layout<unknown>): number => {
+  let depth = 0;
+
+  if (layout.parent) {
+    depth += 1 + calculateCurrentDepth(layout.parent);
+  }
+
+  return depth;
+};
+
 export const useAddTab = (
   tab: TabTemplate,
   layout: Layout,
@@ -328,12 +337,11 @@ export const useAddTab = (
   return true;
 };
 
-export const useOnDrop = (
+export const useOnDrop = <T = Record<string, unknown>>(
   dragData: Record<string, unknown> | DraggedTab,
   layout: Layout,
   side: Side,
-  areSame: (t1: any, t2: any) => boolean,
-  factory: (data: Record<string, unknown>) => TabTemplate | undefined
+  options: UseOnDropOptions<T>
 ) => {
   let tab: TabTemplate | undefined = undefined;
   let isDragged: boolean = false;
@@ -405,13 +413,28 @@ export const useOnDrop = (
 
     tab = createTab({ title: $tab.title, data: $tab.data });
   } else {
-    tab ??= factory(dragData as Record<string, unknown>);
+    tab ??= options.onUnknownDropped(dragData as T);
+  }
+
+  const depth = calculateCurrentDepth(layout);
+
+  if (options.maxDepth && depth >= options.maxDepth) {
+    if (depth > 0) {
+      // this means that the layout is a child
+      if (
+        (layout.parent!.direction === Direction.Column && [Side.Left, Side.Right].includes(side)) ||
+        (layout.parent!.direction === Direction.Row && [Side.Top, Side.Bottom].includes(side))
+      ) {
+        options.onMaxDepthReached?.();
+        return;
+      }
+    }
   }
 
   if (tab) {
     switch (side) {
       case Side.Center: {
-        useAddTab(tab, layout, areSame);
+        useAddTab(tab, layout, options.compareTabs);
         break;
       }
       case Side.Top: {
@@ -446,14 +469,14 @@ export default <T extends Record<string, unknown> = Record<string, unknown>>(
 ) => {
   const tree = reactive(transformLayoutTemplate(layout));
 
-  const areSame = options.areSameTab || (() => false);
+  const compareTabs = options.compareTabs || (() => false);
 
   const startTab = (tab: TabTemplate<T>) => {
     if (tree.children.length !== 0) {
       return;
     }
 
-    useAddTab(tab, tree, areSame);
+    useAddTab(tab, tree, compareTabs);
   };
 
   const actions: LayoutActions = {
@@ -464,7 +487,7 @@ export default <T extends Record<string, unknown> = Record<string, unknown>>(
         throw `Not found (addTab): Layout with id "${id}" was not found.`;
       }
 
-      useAddTab(tab, layout, areSame, position);
+      useAddTab(tab, layout, compareTabs, position);
     },
     closeTab(id) {
       const tab = findTab(id, getRoot(tree));
@@ -491,14 +514,14 @@ export default <T extends Record<string, unknown> = Record<string, unknown>>(
         throw `Not found (onDrop): Layout with id "${id}" was not found.`;
       }
 
-      useOnDrop(data, layout, side, areSame, options.onUnknownDropped);
+      useOnDrop(data, layout, side, options);
     },
     onEmptyDrop(data) {
       if (tree.children.length !== 0) {
         throw `Forbidden: Root layout is not empty.`;
       }
 
-      const tab = options.onUnknownDropped(data);
+      const tab = options.onUnknownDropped(data as T);
 
       if (tab) {
         useAddTab(tab, tree, () => false);
@@ -506,7 +529,5 @@ export default <T extends Record<string, unknown> = Record<string, unknown>>(
     },
   };
 
-  const colors: LayoutColorOptions = { ...defaultColors, ...options.colors };
-
-  return { startTab, options: { tree, actions, colors } };
+  return { startTab, options: { tree, actions } };
 };

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Direction } from "./lib/types";
-import { VLayout, useLayout, createLayout, createTab } from "./lib";
+import { VLayout, useLayout, layout as createLayout, tab as createTab } from "./lib";
 
 const { options } = useLayout(
   createLayout({
@@ -14,9 +14,13 @@ const { options } = useLayout(
     onUnknownDropped() {
       return createTab({ title: "Tab", data: { text: "Custom Tab" } });
     },
-    areSameTab() {
+    compareTabs() {
       return false;
     },
+    onMaxDepthReached: () => {
+      alert("max depth reached !");
+    },
+    maxDepth: 4,
   }
 );
 </script>
