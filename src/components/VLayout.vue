@@ -254,8 +254,8 @@ onBeforeUnmount(() => {
               @toggle-tab="toggle(item.id)"
               @close-tab="close(item.id)"
             >
-              <template #default="props">
-                <slot name="tab-btn" v-bind="props" />
+              <template #default="props: TabButtonSlotProps">
+                <slot name="tab-btn" v-bind="(props as TabButtonSlotProps)" />
               </template>
             </VTabButton>
           </div>
@@ -264,7 +264,7 @@ onBeforeUnmount(() => {
       <VTabContent @on-drop="drop">
         <slot
           name="tab"
-          v-bind="getTab(options.tree.active!,(options.tree.children as Array<Tab>))"
+          v-bind="(getTab(options.tree.active!,(options.tree.children as Array<Tab>)) as Tab)"
         />
       </VTabContent>
     </div>
@@ -274,10 +274,10 @@ onBeforeUnmount(() => {
         :key="item.id"
         :options="{ tree: item, actions: options.actions }"
       >
-        <template #tab="data">
+        <template #tab="data: Tab">
           <slot name="tab" v-bind="(data as Tab)" />
         </template>
-        <template #tab-btn="props">
+        <template #tab-btn="props: TabButtonSlotProps">
           <slot name="tab-btn" v-bind="(props as TabButtonSlotProps)" />
         </template>
       </VLayout>

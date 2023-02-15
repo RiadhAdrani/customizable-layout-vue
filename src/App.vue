@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Direction } from "./lib/types";
-import { VLayout, useLayout, layout as createLayout, tab as createTab } from "./lib";
+import { Direction } from "./components/types";
+import { VLayout, useLayout, layout as createLayout, tab as createTab } from "./components";
 
 const { options } = useLayout(
   createLayout({
